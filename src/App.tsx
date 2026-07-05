@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Baby,
-  Bell,
   BriefcaseBusiness,
   CalendarDays,
   Car,
@@ -18,7 +17,6 @@ import {
   MapPin,
   MessageCircle,
   Pencil,
-  Search,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -150,6 +148,7 @@ export default function App() {
   function goTo(nextScreen: Screen) {
     setError(null);
     setScreen(nextScreen);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }
 
   function selectUseCase(item: RitualUseCase) {
@@ -230,8 +229,15 @@ export default function App() {
   return (
     <main className="page">
       <section className="mweb-shell">
+        <SiteHeader
+          onHome={() => goTo("home")}
+          onTrack={() => booking && goTo("status")}
+          canTrack={Boolean(booking)}
+        />
+
         {screen !== "home" && (
-          <Navigation
+          <CheckoutNavigation
+            screen={screen}
             title={screenTitle(screen)}
             onBack={() => goTo(previousScreen(screen))}
             muted={screen === "confirm" || screen === "status"}
@@ -358,25 +364,84 @@ function previousScreen(screen: Screen): Screen {
   }[screen] as Screen;
 }
 
-function Navigation({
+function SiteHeader({
+  onHome,
+  onTrack,
+  canTrack,
+}: {
+  onHome: () => void;
+  onTrack: () => void;
+  canTrack: boolean;
+}) {
+  return (
+    <header className="site-header">
+      <div className="site-header-inner">
+        <button className="brand-button" onClick={onHome} aria-label="Sankalp home">
+          <span className="brand-symbol">
+            <Sparkles />
+          </span>
+          <span className="brand-copy">
+            <strong>Sankalp</strong>
+            <small>by Tathastu</small>
+          </span>
+        </button>
+
+        <div className="site-actions">
+          <span className="location-pill">
+            <MapPin /> Mumbai
+          </span>
+          {canTrack && (
+            <button className="track-button" onClick={onTrack}>
+              Track booking
+            </button>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function CheckoutNavigation({
+  screen,
   title,
   onBack,
   muted = false,
 }: {
+  screen: Screen;
   title: string;
   onBack: () => void;
   muted?: boolean;
 }) {
+  const stepByScreen: Partial<Record<Screen, number>> = {
+    ritual: 1,
+    time: 2,
+    phone: 3,
+    otp: 3,
+    payment: 4,
+    confirm: 4,
+    status: 4,
+  };
+  const currentStep = stepByScreen[screen] ?? 1;
+  const complete = screen === "confirm" || screen === "status";
+
   return (
-    <header className="nav">
-      <button className="icon-button" onClick={onBack} aria-label="Go back" disabled={muted}>
-        <ArrowLeft />
-      </button>
-      <strong>{title}</strong>
-      <button className="icon-button" aria-label="Notifications">
-        <Bell />
-      </button>
-    </header>
+    <nav className="checkout-nav" aria-label="Booking progress">
+      <div className="checkout-nav-row">
+        <button className="back-button" onClick={onBack} disabled={muted}>
+          <ArrowLeft /> Back
+        </button>
+        <div className="checkout-title">
+          <span>{complete ? "Booking complete" : `Step ${currentStep} of 4`}</span>
+          <strong>{title}</strong>
+        </div>
+        <span className="step-count">{complete ? "Done" : `${currentStep}/4`}</span>
+      </div>
+      <div className="progress-track" aria-hidden="true">
+        {[1, 2, 3, 4].map((step) => (
+          <i className={step <= currentStep ? "active" : ""} key={step} />
+        ))}
+      </div>
+    </nav>
   );
 }
 
@@ -407,25 +472,50 @@ function HomeView({
   const firstGroup = Object.entries(groupedUseCases)[0];
 
   return (
-    <>
-      <div className="scroll-area with-home-cta">
-        <div className="home-top">
-          <div className="location-pill">
-            <MapPin /> Mumbai
+    <div className="home-page">
+      <section className="greeting">
+        <div className="hero-layout">
+          <div className="hero-message">
+            <span>Trusted ritual booking</span>
+            <h1>Choose the moment. We handle the ritual.</h1>
+            <p>
+              Book a verified pandit for life&rsquo;s important moments, choose an auspicious time,
+              and track every step online.
+            </p>
+            <div className="hero-actions">
+              <button className="primary-button" onClick={onPrimary} disabled={!data.useCases.length}>
+                Find your ritual <ArrowRight />
+              </button>
+              <small>No calls or account setup required</small>
+            </div>
+            <div className="hero-assurances" aria-label="Service assurances">
+              <span>
+                <ShieldCheck /> Verified pandits
+              </span>
+              <span>
+                <CalendarDays /> Clear muhurat slots
+              </span>
+              <span>
+                <Smartphone /> Status updates
+              </span>
+            </div>
           </div>
-          <button className="icon-button" aria-label="Search">
-            <Search />
-          </button>
+
+          <div className="hero-visual" aria-hidden="true">
+            <RitualArt />
+            <div className="hero-visual-card">
+              <span>Simple booking</span>
+              <strong>Ritual to confirmation</strong>
+              <small>in a few guided steps</small>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <section className="greeting">
-          <span>Sankalp</span>
-          <h1>Choose the moment. We handle the ritual.</h1>
-          <p>Verified pandits, simple phone verification, and booking status powered by Supabase.</p>
-        </section>
-
+      <div className="content-container">
         {error && <InlineError message={error} />}
 
+        <SectionTitle eyebrow="Featured services" title="Rituals for the moment you are in" />
         <section className="banner-track" aria-label="Featured rituals">
           {data.banners.map((banner) => (
             <button
@@ -447,48 +537,50 @@ function HomeView({
 
         <SectionTitle eyebrow="Browse by moment" title="What is happening right now?" />
 
-        {Object.entries(groupedUseCases).map(([group, items]) => (
-          <section className="moment-group" key={group}>
-            <h3>{group}</h3>
-            {items.slice(0, group === firstGroup?.[0] ? 4 : 3).map((item) => (
-              <UseCaseRow item={item} onClick={() => onUseCase(item)} key={item.id} />
-            ))}
-          </section>
-        ))}
-
-        <section className="trust-card">
-          <div>
-            <ShieldCheck />
-            <strong>How it works</strong>
-          </div>
-          <ol>
-            <li>Pick a moment and muhurat.</li>
-            <li>Verify your phone with OTP 1234.</li>
-            <li>Pay and track the ritual status.</li>
-          </ol>
-        </section>
-
-        <SectionTitle eyebrow="Questions" title="Before you book" />
-        <section className="faq-list">
-          {data.faqs.map((faq) => (
-            <details key={faq.id}>
-              <summary>{faq.question}</summary>
-              <p>{faq.answer}</p>
-            </details>
+        <div className="moment-groups-grid">
+          {Object.entries(groupedUseCases).map(([group, items]) => (
+            <section className="moment-group" key={group}>
+              <h3>{group}</h3>
+              {items.slice(0, group === firstGroup?.[0] ? 4 : 3).map((item) => (
+                <UseCaseRow item={item} onClick={() => onUseCase(item)} key={item.id} />
+              ))}
+            </section>
           ))}
-        </section>
+        </div>
+
+        <div className="home-info-grid">
+          <section className="trust-card">
+            <div>
+              <ShieldCheck />
+              <strong>How it works</strong>
+            </div>
+            <ol>
+              <li>Tell us what the moment is.</li>
+              <li>Choose a ritual and suitable muhurat.</li>
+              <li>Verify your phone and confirm the booking.</li>
+              <li>Track pandit assignment and completion.</li>
+            </ol>
+          </section>
+
+          <div className="faq-block">
+            <SectionTitle eyebrow="Questions" title="Before you book" />
+            <section className="faq-list">
+              {data.faqs.map((faq) => (
+                <details key={faq.id}>
+                  <summary>{faq.question}</summary>
+                  <p>{faq.answer}</p>
+                </details>
+              ))}
+            </section>
+          </div>
+        </div>
       </div>
 
-      <footer className="home-cta">
-        <div>
-          <span>Ready in 2 minutes</span>
-          <strong>Start with Raksha Kavach</strong>
-        </div>
-        <button className="primary-button" onClick={onPrimary} disabled={!data.useCases.length}>
-          Begin <ArrowRight />
-        </button>
+      <footer className="site-footer">
+        <span>Sankalp by Tathastu</span>
+        <small>Thoughtful rituals, clearly coordinated.</small>
       </footer>
-    </>
+    </div>
   );
 }
 

@@ -16,10 +16,12 @@ test("loads live catalogue data and reaches phone verification", async ({ page }
   await page.getByRole("button", { name: /New job/ }).click();
   await expect(page.getByText("Ritual details", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Raksha Kavach" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
   await page.getByRole("button", { name: /Choose time/ }).click();
   await expect(page.getByText("Choose time", { exact: true })).toBeVisible();
   await expect(page.locator(".slot-card").first()).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
   await page.getByRole("button", { name: /Verify phone/ }).click();
   await expect(page.getByRole("heading", { name: "Where should we send the OTP?" })).toBeVisible();
