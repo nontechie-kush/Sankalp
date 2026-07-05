@@ -12,11 +12,12 @@ test("loads live catalogue data and reaches phone verification without slot sele
     page.getByRole("heading", { name: "Choose the moment. We handle the ritual." }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /New job/ })).toBeVisible();
-  await expect(page.getByText(/Expected today|Performed by tomorrow/).first()).toBeVisible();
+  await expect(page.locator(".service-promise")).toHaveCount(0);
 
   await page.getByRole("button", { name: /New job/ }).click();
   await expect(page.getByText("Ritual details", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Raksha Kavach" })).toBeVisible();
+  await expect(page.getByText(/Expected today|Performed by tomorrow/).first()).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
   await expect(page.getByRole("button", { name: /Choose time/ })).toHaveCount(0);

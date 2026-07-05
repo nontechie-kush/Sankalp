@@ -256,7 +256,6 @@ export default function App() {
           <HomeView
             data={data}
             groupedUseCases={groupedUseCases}
-            fulfilment={fulfilment}
             error={error}
             onBanner={selectBanner}
             onUseCase={selectUseCase}
@@ -449,7 +448,6 @@ function LoadingState() {
 function HomeView({
   data,
   groupedUseCases,
-  fulfilment,
   error,
   onBanner,
   onUseCase,
@@ -457,30 +455,21 @@ function HomeView({
 }: {
   data: AppData;
   groupedUseCases: Record<string, RitualUseCase[]>;
-  fulfilment: FulfilmentExpectation;
   error: string | null;
   onBanner: (banner: HomeBanner) => void;
   onUseCase: (item: RitualUseCase) => void;
   onPrimary: () => void;
 }) {
   const firstGroup = Object.entries(groupedUseCases)[0];
-  const faqs = [
-    {
-      id: "fulfilment-policy",
-      question: "When will my ritual be performed?",
-      answer:
-        "Book before 2 PM for same-day performance, unless the day is inauspicious. Bookings made later, or on an inauspicious day, are performed by the next day.",
-    },
-    ...data.faqs.map((faq) =>
-      faq.question === "What do I have to do?"
-        ? {
-            ...faq,
-            answer:
-              "Choose the moment and ritual, verify your phone, and complete payment. We schedule the auspicious performance and handle pandit assignment for you.",
-          }
-        : faq,
-    ),
-  ];
+  const faqs = data.faqs.map((faq) =>
+    faq.question === "What do I have to do?"
+      ? {
+          ...faq,
+          answer:
+            "Choose the moment and ritual, verify your phone, and complete payment. We schedule the auspicious performance and handle pandit assignment for you.",
+        }
+      : faq,
+  );
 
   return (
     <div className="home-page">
@@ -490,8 +479,8 @@ function HomeView({
             <span>Trusted ritual booking</span>
             <h1>Choose the moment. We handle the ritual.</h1>
             <p>
-              Book before 2 PM for same-day performance unless the day is inauspicious. Later
-              bookings are performed by the end of the next day.
+              Book a verified pandit for life&rsquo;s important moments. We schedule the ritual and
+              keep you updated from confirmation to completion.
             </p>
             <div className="hero-actions">
               <button className="primary-button" onClick={onPrimary} disabled={!data.useCases.length}>
@@ -504,7 +493,7 @@ function HomeView({
                 <ShieldCheck /> Verified pandits
               </span>
               <span>
-                <Clock3 /> Same day before 2 PM*
+                <Sparkles /> Auspiciously scheduled
               </span>
               <span>
                 <Smartphone /> Status updates
@@ -525,7 +514,6 @@ function HomeView({
 
       <div className="content-container">
         {error && <InlineError message={error} />}
-        <ServicePromise fulfilment={fulfilment} />
 
         <SectionTitle eyebrow="Featured services" title="Rituals for the moment you are in" />
         <section className="banner-track" aria-label="Featured rituals">
