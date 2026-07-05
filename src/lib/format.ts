@@ -35,3 +35,56 @@ export function todayIso(now = new Date()) {
 export function readableStatus(status: string) {
   return status.replaceAll("_", " ");
 }
+
+export interface FulfilmentExpectation {
+  isSameDay: boolean;
+  title: string;
+  dateLabel: string;
+  serviceDateIso: string;
+  detail: string;
+}
+
+export function getFulfilmentExpectation(now = new Date()): FulfilmentExpectation {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const year = value("year");
+  const month = value("month");
+  const day = value("day");
+  const hour = value("hour");
+  const isSameDay = hour < 14;
+  const serviceDate = new Date(Date.UTC(year, month - 1, day + (isSameDay ? 0 : 1)));
+  const serviceDateIso = serviceDate.toISOString().slice(0, 10);
+  const formattedDate = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(serviceDate);
+
+  if (isSameDay) {
+    return {
+      isSameDay,
+      title: "Expected today",
+      dateLabel: `Today, ${formattedDate}`,
+      serviceDateIso,
+      detail:
+        "Booked before 2 PM. If today is an inauspicious day, the ritual will be performed by tomorrow.",
+    };
+  }
+
+  return {
+    isSameDay,
+    title: "Performed by tomorrow",
+    dateLabel: `By ${formattedDate}`,
+    serviceDateIso,
+    detail: "Bookings placed at or after 2 PM are performed by the end of the next day.",
+  };
+}

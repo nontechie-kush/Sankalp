@@ -6,7 +6,8 @@ React mobile-web booking flow backed by Supabase and deployable on Vercel. The v
 
 - Supabase-powered ritual catalogue, banners, use cases, slots, and FAQs
 - Ritual and intent selection
-- Upcoming-slot selection (expired slots are excluded)
+- Mumbai-time fulfilment policy: before 2 PM is expected the same day unless inauspicious; all other bookings are performed by the next day
+- Internal Supabase slot assignment without exposing muhurat selection to customers
 - Development phone verification using OTP `1234`
 - Mock payment
 - Booking confirmation and status timeline

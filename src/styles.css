@@ -217,7 +217,7 @@ summary:focus-visible {
 
 .progress-track {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 5px;
 }
 
@@ -285,7 +285,6 @@ summary:focus-visible {
 .payment-card > span,
 .success-screen > span,
 .ritual-hero > span,
-.time-summary > span,
 .selected-card span,
 .status-card span {
   font-size: 10px;
@@ -416,6 +415,84 @@ p {
   max-width: 1180px;
   margin: 0 auto;
   padding: 24px 0 64px;
+}
+
+.service-promise {
+  margin: 8px 18px 16px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  border: 1px solid rgba(93, 135, 89, 0.24);
+  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(145deg, rgba(241, 247, 237, 0.96), rgba(226, 237, 218, 0.9));
+  color: var(--ink);
+}
+
+.content-container > .service-promise {
+  margin-top: 0;
+}
+
+.promise-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--green);
+  color: #fff;
+}
+
+.promise-icon svg {
+  width: 19px;
+}
+
+.service-promise small {
+  display: block;
+  color: var(--green);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.service-promise strong {
+  margin-top: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 18px;
+}
+
+.service-promise em {
+  color: var(--green);
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.service-promise p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.service-promise.compact {
+  padding: 13px 14px;
+}
+
+.form-card .service-promise,
+.success-screen .service-promise,
+.status-view > .service-promise {
+  width: 100%;
+  margin: 18px 0 0;
+  text-align: left;
 }
 
 .banner-track {
@@ -774,8 +851,7 @@ p {
   width: 100%;
 }
 
-.ritual-hero,
-.time-summary {
+.ritual-hero {
   margin: 22px 18px 0;
   min-height: 220px;
   position: relative;
@@ -795,16 +871,14 @@ p {
   fill: none;
 }
 
-.ritual-hero h1,
-.time-summary h1 {
+.ritual-hero h1 {
   position: relative;
   margin-top: 9px;
   font-size: 36px;
   line-height: 0.98;
 }
 
-.ritual-hero p,
-.time-summary p {
+.ritual-hero p {
   position: relative;
   margin-top: 12px;
   max-width: 25ch;
@@ -872,69 +946,6 @@ p {
 
 .compact-list {
   padding: 0 18px 20px;
-}
-
-.time-summary {
-  min-height: auto;
-  background: rgba(255, 253, 248, 0.82);
-}
-
-.slot-list {
-  padding: 16px 18px 24px;
-}
-
-.slot-list .inline-error {
-  margin: 0;
-}
-
-.slot-card {
-  width: 100%;
-  min-height: 78px;
-  display: grid;
-  grid-template-columns: 36px 1fr auto;
-  gap: 12px;
-  align-items: center;
-  position: relative;
-  margin-bottom: 9px;
-  border: 1px solid var(--soft-line);
-  border-radius: 18px;
-  background: rgba(255, 253, 248, 0.86);
-  color: var(--ink);
-  text-align: left;
-  padding: 13px;
-}
-
-.slot-card.active {
-  border-color: rgba(189, 104, 66, 0.55);
-  box-shadow: inset 0 0 0 1px rgba(189, 104, 66, 0.18);
-}
-
-.slot-card > svg {
-  width: 20px;
-  color: var(--clay);
-}
-
-.slot-card span {
-  display: block;
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 11.5px;
-}
-
-.slot-card em {
-  font-style: normal;
-  color: var(--clay);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.slot-card small {
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
-  color: var(--green);
-  font-size: 9px;
-  font-weight: 900;
 }
 
 .form-screen {
@@ -1259,6 +1270,11 @@ p {
     padding: 36px 24px 88px;
   }
 
+  .content-container > .service-promise,
+  .scroll-area > .service-promise {
+    margin-inline: 0;
+  }
+
   .section-title {
     padding-inline: 0;
   }
@@ -1304,7 +1320,6 @@ p {
   }
 
   .ritual-hero,
-  .time-summary,
   .selected-card,
   .payment-card,
   .receipt {
@@ -1316,14 +1331,12 @@ p {
     padding: 34px;
   }
 
-  .ritual-hero h1,
-  .time-summary h1 {
+  .ritual-hero h1 {
     font-size: 46px;
   }
 
   .info-grid,
-  .compact-list,
-  .slot-list {
+  .compact-list {
     padding-inline: 0;
   }
 

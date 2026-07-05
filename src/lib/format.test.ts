@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatMoney, formatTime, readableStatus, todayIso } from "./format";
+import {
+  formatDate,
+  formatMoney,
+  formatTime,
+  getFulfilmentExpectation,
+  readableStatus,
+  todayIso,
+} from "./format";
 
 describe("format helpers", () => {
   it("formats INR minor units", () => {
@@ -17,5 +24,19 @@ describe("format helpers", () => {
 
   it("creates a local ISO date", () => {
     expect(todayIso(new Date(2026, 6, 5))).toBe("2026-07-05");
+  });
+
+  it("promises same-day fulfilment before 2 PM in Mumbai", () => {
+    const expectation = getFulfilmentExpectation(new Date("2026-07-05T08:29:00.000Z"));
+    expect(expectation.isSameDay).toBe(true);
+    expect(expectation.title).toBe("Expected today");
+    expect(expectation.dateLabel).toContain("5 Jul");
+  });
+
+  it("moves fulfilment to the next day at 2 PM in Mumbai", () => {
+    const expectation = getFulfilmentExpectation(new Date("2026-07-05T08:30:00.000Z"));
+    expect(expectation.isSameDay).toBe(false);
+    expect(expectation.title).toBe("Performed by tomorrow");
+    expect(expectation.dateLabel).toContain("6 Jul");
   });
 });

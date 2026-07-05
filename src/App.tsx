@@ -4,9 +4,9 @@ import {
   ArrowRight,
   Baby,
   BriefcaseBusiness,
-  CalendarDays,
   Car,
   Check,
+  Clock3,
   CreditCard,
   DoorOpen,
   EyeOff,
@@ -25,7 +25,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createAndPayBooking, loadAppData, requestOtp, verifyOtp } from "./lib/api";
-import { formatDate, formatMoney, formatTime, readableStatus } from "./lib/format";
+import {
+  formatMoney,
+  getFulfilmentExpectation,
+  readableStatus,
+  type FulfilmentExpectation,
+} from "./lib/format";
 import type {
   AppData,
   Booking,
@@ -34,7 +39,6 @@ import type {
   Ritual,
   RitualUseCase,
   Screen,
-  TimeSlot,
   VerifiedLead,
 } from "./types";
 
@@ -73,7 +77,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | null>(null);
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [bookingStartedAt, setBookingStartedAt] = useState(() => new Date());
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
@@ -90,7 +94,6 @@ export default function App() {
         if (!active) return;
         setData(nextData);
         setSelectedUseCaseId(nextData.useCases[0]?.id ?? null);
-        setSelectedSlotId(nextData.slots[0]?.id ?? null);
       })
       .catch((reason: unknown) => {
         if (!active) return;
@@ -120,20 +123,24 @@ export default function App() {
     [data.rituals, selectedUseCase],
   );
 
-  const ritualSlots = useMemo(() => {
-    const matching = data.slots.filter(
-      (slot) => slot.ritual_id === selectedRitual?.id || slot.ritual_id === null,
-    );
-    return matching.length ? matching : data.slots;
-  }, [data.slots, selectedRitual?.id]);
+  const fulfilment = useMemo(
+    () => getFulfilmentExpectation(bookingStartedAt),
+    [bookingStartedAt],
+  );
 
   const selectedSlot = useMemo(
     () =>
-      ritualSlots.find((slot) => slot.id === selectedSlotId) ??
-      ritualSlots[0] ??
+      data.slots.find(
+        (slot) =>
+          (slot.ritual_id === selectedRitual?.id || slot.ritual_id === null) &&
+          slot.slot_date === fulfilment.serviceDateIso,
+      ) ??
+      data.slots.find(
+        (slot) => slot.ritual_id === selectedRitual?.id || slot.ritual_id === null,
+      ) ??
       data.slots[0] ??
       null,
-    [data.slots, ritualSlots, selectedSlotId],
+    [data.slots, fulfilment.serviceDateIso, selectedRitual?.id],
   );
 
   const groupedUseCases = useMemo(
@@ -153,8 +160,7 @@ export default function App() {
 
   function selectUseCase(item: RitualUseCase) {
     setSelectedUseCaseId(item.id);
-    const firstSlot = data.slots.find((slot) => slot.ritual_id === item.ritual_id);
-    setSelectedSlotId(firstSlot?.id ?? data.slots[0]?.id ?? null);
+    setBookingStartedAt(new Date());
     setLead(null);
     setBooking(null);
     goTo("ritual");
@@ -201,7 +207,7 @@ export default function App() {
   }
 
   async function pay() {
-    if (!lead || !selectedRitual || !selectedUseCase || !selectedSlot) return;
+    if (!lead || !selectedRitual || !selectedUseCase) return;
     setBusy(true);
     setError(null);
     try {
@@ -209,9 +215,9 @@ export default function App() {
         leadId: lead.lead_id,
         ritualId: selectedRitual.id,
         useCaseId: selectedUseCase.id,
-        slotId: selectedSlot.id,
+        slotId: selectedSlot?.id ?? null,
         customerName: name,
-        intentNote: selectedUseCase.title,
+        intentNote: `${selectedUseCase.title}. ${fulfilment.title} (${fulfilment.dateLabel}). ${fulfilment.detail}`,
       });
       if (!confirmedBooking) throw new Error("The booking could not be retrieved.");
       setBooking(confirmedBooking);
@@ -250,6 +256,7 @@ export default function App() {
           <HomeView
             data={data}
             groupedUseCases={groupedUseCases}
+            fulfilment={fulfilment}
             error={error}
             onBanner={selectBanner}
             onUseCase={selectUseCase}
@@ -264,30 +271,20 @@ export default function App() {
             relatedUseCases={data.useCases.filter(
               (item) => item.ritual_id === selectedRitual.id,
             )}
+            fulfilment={fulfilment}
             onUseCase={selectUseCase}
-            onContinue={() => goTo("time")}
+            onContinue={() => goTo("phone")}
           />
         )}
 
-        {!loading && screen === "time" && selectedRitual && selectedUseCase && (
-          <TimeView
-            ritual={selectedRitual}
-            useCase={selectedUseCase}
-            slots={ritualSlots}
-            selectedSlotId={selectedSlot?.id ?? null}
-            onSlot={setSelectedSlotId}
-            onContinue={() => selectedSlot && goTo("phone")}
-          />
-        )}
-
-        {!loading && screen === "phone" && selectedUseCase && selectedSlot && (
+        {!loading && screen === "phone" && selectedUseCase && (
           <PhoneView
             phone={phone}
             name={name}
             error={error}
             busy={busy}
             useCase={selectedUseCase}
-            slot={selectedSlot}
+            fulfilment={fulfilment}
             onName={setName}
             onPhone={setPhone}
             onContinue={sendOtp}
@@ -298,6 +295,7 @@ export default function App() {
         {!loading && screen === "otp" && challenge && (
           <OtpView
             challenge={challenge}
+            fulfilment={fulfilment}
             otp={otp}
             busy={busy}
             error={error}
@@ -307,31 +305,28 @@ export default function App() {
           />
         )}
 
-        {!loading &&
-          screen === "payment" &&
-          selectedRitual &&
-          selectedUseCase &&
-          selectedSlot && (
-            <PaymentView
-              ritual={selectedRitual}
-              useCase={selectedUseCase}
-              slot={selectedSlot}
-              busy={busy}
-              error={error}
-              onPay={pay}
-            />
-          )}
+        {!loading && screen === "payment" && selectedRitual && selectedUseCase && (
+          <PaymentView
+            ritual={selectedRitual}
+            useCase={selectedUseCase}
+            fulfilment={fulfilment}
+            busy={busy}
+            error={error}
+            onPay={pay}
+          />
+        )}
 
         {!loading && screen === "confirm" && booking && (
           <ConfirmationView
             booking={booking}
+            fulfilment={fulfilment}
             onStatus={() => goTo("status")}
             onHome={() => goTo("home")}
           />
         )}
 
         {!loading && screen === "status" && booking && (
-          <StatusView booking={booking} onHome={() => goTo("home")} />
+          <StatusView booking={booking} fulfilment={fulfilment} onHome={() => goTo("home")} />
         )}
       </section>
     </main>
@@ -342,7 +337,6 @@ function screenTitle(screen: Screen) {
   return {
     home: "Sankalp",
     ritual: "Ritual details",
-    time: "Choose time",
     phone: "Verify phone",
     otp: "Enter OTP",
     payment: "Payment",
@@ -355,8 +349,7 @@ function previousScreen(screen: Screen): Screen {
   return {
     home: "home",
     ritual: "home",
-    time: "ritual",
-    phone: "time",
+    phone: "ritual",
     otp: "phone",
     payment: "otp",
     confirm: "home",
@@ -414,12 +407,11 @@ function CheckoutNavigation({
 }) {
   const stepByScreen: Partial<Record<Screen, number>> = {
     ritual: 1,
-    time: 2,
-    phone: 3,
-    otp: 3,
-    payment: 4,
-    confirm: 4,
-    status: 4,
+    phone: 2,
+    otp: 2,
+    payment: 3,
+    confirm: 3,
+    status: 3,
   };
   const currentStep = stepByScreen[screen] ?? 1;
   const complete = screen === "confirm" || screen === "status";
@@ -431,13 +423,13 @@ function CheckoutNavigation({
           <ArrowLeft /> Back
         </button>
         <div className="checkout-title">
-          <span>{complete ? "Booking complete" : `Step ${currentStep} of 4`}</span>
+          <span>{complete ? "Booking complete" : `Step ${currentStep} of 3`}</span>
           <strong>{title}</strong>
         </div>
-        <span className="step-count">{complete ? "Done" : `${currentStep}/4`}</span>
+        <span className="step-count">{complete ? "Done" : `${currentStep}/3`}</span>
       </div>
       <div className="progress-track" aria-hidden="true">
-        {[1, 2, 3, 4].map((step) => (
+        {[1, 2, 3].map((step) => (
           <i className={step <= currentStep ? "active" : ""} key={step} />
         ))}
       </div>
@@ -457,6 +449,7 @@ function LoadingState() {
 function HomeView({
   data,
   groupedUseCases,
+  fulfilment,
   error,
   onBanner,
   onUseCase,
@@ -464,12 +457,30 @@ function HomeView({
 }: {
   data: AppData;
   groupedUseCases: Record<string, RitualUseCase[]>;
+  fulfilment: FulfilmentExpectation;
   error: string | null;
   onBanner: (banner: HomeBanner) => void;
   onUseCase: (item: RitualUseCase) => void;
   onPrimary: () => void;
 }) {
   const firstGroup = Object.entries(groupedUseCases)[0];
+  const faqs = [
+    {
+      id: "fulfilment-policy",
+      question: "When will my ritual be performed?",
+      answer:
+        "Book before 2 PM for same-day performance, unless the day is inauspicious. Bookings made later, or on an inauspicious day, are performed by the next day.",
+    },
+    ...data.faqs.map((faq) =>
+      faq.question === "What do I have to do?"
+        ? {
+            ...faq,
+            answer:
+              "Choose the moment and ritual, verify your phone, and complete payment. We schedule the auspicious performance and handle pandit assignment for you.",
+          }
+        : faq,
+    ),
+  ];
 
   return (
     <div className="home-page">
@@ -479,8 +490,8 @@ function HomeView({
             <span>Trusted ritual booking</span>
             <h1>Choose the moment. We handle the ritual.</h1>
             <p>
-              Book a verified pandit for life&rsquo;s important moments, choose an auspicious time,
-              and track every step online.
+              Book before 2 PM for same-day performance unless the day is inauspicious. Later
+              bookings are performed by the end of the next day.
             </p>
             <div className="hero-actions">
               <button className="primary-button" onClick={onPrimary} disabled={!data.useCases.length}>
@@ -493,7 +504,7 @@ function HomeView({
                 <ShieldCheck /> Verified pandits
               </span>
               <span>
-                <CalendarDays /> Clear muhurat slots
+                <Clock3 /> Same day before 2 PM*
               </span>
               <span>
                 <Smartphone /> Status updates
@@ -514,6 +525,7 @@ function HomeView({
 
       <div className="content-container">
         {error && <InlineError message={error} />}
+        <ServicePromise fulfilment={fulfilment} />
 
         <SectionTitle eyebrow="Featured services" title="Rituals for the moment you are in" />
         <section className="banner-track" aria-label="Featured rituals">
@@ -556,7 +568,7 @@ function HomeView({
             </div>
             <ol>
               <li>Tell us what the moment is.</li>
-              <li>Choose a ritual and suitable muhurat.</li>
+              <li>Choose the ritual; we schedule the auspicious performance.</li>
               <li>Verify your phone and confirm the booking.</li>
               <li>Track pandit assignment and completion.</li>
             </ol>
@@ -565,7 +577,7 @@ function HomeView({
           <div className="faq-block">
             <SectionTitle eyebrow="Questions" title="Before you book" />
             <section className="faq-list">
-              {data.faqs.map((faq) => (
+              {faqs.map((faq) => (
                 <details key={faq.id}>
                   <summary>{faq.question}</summary>
                   <p>{faq.answer}</p>
@@ -588,12 +600,14 @@ function RitualView({
   ritual,
   selectedUseCase,
   relatedUseCases,
+  fulfilment,
   onUseCase,
   onContinue,
 }: {
   ritual: Ritual;
   selectedUseCase: RitualUseCase;
   relatedUseCases: RitualUseCase[];
+  fulfilment: FulfilmentExpectation;
   onUseCase: (item: RitualUseCase) => void;
   onContinue: () => void;
 }) {
@@ -621,6 +635,8 @@ function RitualView({
           <strong>{formatMoney(selectedUseCase.price_minor, selectedUseCase.currency)}</strong>
         </section>
 
+        <ServicePromise fulfilment={fulfilment} compact />
+
         <SectionTitle eyebrow="Includes" title="Built for low-friction booking" />
         <section className="info-grid">
           <InfoTile icon={<ShieldCheck />} title="Verified pandit" text="Manually assigned for quality." />
@@ -646,67 +662,10 @@ function RitualView({
       </div>
 
       <BottomBar
-        label="Starts at"
+        label={fulfilment.title}
         value={formatMoney(selectedUseCase.price_minor, selectedUseCase.currency)}
-        action="Choose time"
+        action="Continue booking"
         onAction={onContinue}
-      />
-    </>
-  );
-}
-
-function TimeView({
-  ritual,
-  useCase,
-  slots,
-  selectedSlotId,
-  onSlot,
-  onContinue,
-}: {
-  ritual: Ritual;
-  useCase: RitualUseCase;
-  slots: TimeSlot[];
-  selectedSlotId: string | null;
-  onSlot: (id: string) => void;
-  onContinue: () => void;
-}) {
-  return (
-    <>
-      <div className="scroll-area with-bar">
-        <section className="time-summary">
-          <span>{ritual.title}</span>
-          <h1>{useCase.title}</h1>
-          <p>Choose a slot. The backend reserves capacity after your phone is verified.</p>
-        </section>
-
-        <section className="slot-list">
-          {slots.length === 0 && (
-            <InlineError message="No upcoming slots are available for this ritual yet." />
-          )}
-          {slots.map((slot) => (
-            <button
-              className={`slot-card ${slot.id === selectedSlotId ? "active" : ""}`}
-              onClick={() => onSlot(slot.id)}
-              key={slot.id}
-            >
-              <CalendarDays />
-              <div>
-                <strong>{formatDate(slot.slot_date)}</strong>
-                <span>{slot.label ?? "Open slot"}</span>
-              </div>
-              <em>{formatTime(slot.slot_time)}</em>
-              {slot.is_auspicious && <small>Auspicious</small>}
-            </button>
-          ))}
-        </section>
-      </div>
-
-      <BottomBar
-        label="For"
-        value={formatMoney(useCase.price_minor, useCase.currency)}
-        action="Verify phone"
-        onAction={onContinue}
-        disabled={!selectedSlotId}
       />
     </>
   );
@@ -718,7 +677,7 @@ function PhoneView({
   error,
   busy,
   useCase,
-  slot,
+  fulfilment,
   onName,
   onPhone,
   onContinue,
@@ -729,7 +688,7 @@ function PhoneView({
   error: string | null;
   busy: boolean;
   useCase: RitualUseCase;
-  slot: TimeSlot;
+  fulfilment: FulfilmentExpectation;
   onName: (value: string) => void;
   onPhone: (value: string) => void;
   onContinue: () => void;
@@ -740,9 +699,8 @@ function PhoneView({
       <section className="form-card">
         <span>Phone verification</span>
         <h1>Where should we send the OTP?</h1>
-        <p>
-          Booking {useCase.title} for {formatDate(slot.slot_date)} at {formatTime(slot.slot_time)}.
-        </p>
+        <p>Booking {useCase.title}. We will schedule the auspicious performance for you.</p>
+        <ServicePromise fulfilment={fulfilment} compact />
         <label>
           Name
           <input
@@ -778,6 +736,7 @@ function PhoneView({
 
 function OtpView({
   challenge,
+  fulfilment,
   otp,
   busy,
   error,
@@ -786,6 +745,7 @@ function OtpView({
   canVerify,
 }: {
   challenge: OtpChallenge;
+  fulfilment: FulfilmentExpectation;
   otp: string;
   busy: boolean;
   error: string | null;
@@ -801,6 +761,7 @@ function OtpView({
         <p>
           Development OTP for {challenge.phone}: <strong>{challenge.dev_otp}</strong>
         </p>
+        <ServicePromise fulfilment={fulfilment} compact />
         <label>
           OTP
           <input
@@ -829,14 +790,14 @@ function OtpView({
 function PaymentView({
   ritual,
   useCase,
-  slot,
+  fulfilment,
   busy,
   error,
   onPay,
 }: {
   ritual: Ritual;
   useCase: RitualUseCase;
-  slot: TimeSlot;
+  fulfilment: FulfilmentExpectation;
   busy: boolean;
   error: string | null;
   onPay: () => void;
@@ -848,13 +809,13 @@ function PaymentView({
           <CreditCard />
           <span>Secure checkout</span>
           <h1>{formatMoney(useCase.price_minor, useCase.currency)}</h1>
-          <p>Mock payment for Phase 1. A live payment provider can replace it later.</p>
+          <p>Payment confirms your booking and the fulfilment window shown below.</p>
         </section>
+        <ServicePromise fulfilment={fulfilment} compact />
         <section className="receipt">
           <ReceiptRow label="Ritual" value={ritual.title} />
           <ReceiptRow label="Intent" value={useCase.title} />
-          <ReceiptRow label="Date" value={formatDate(slot.slot_date)} />
-          <ReceiptRow label="Time" value={formatTime(slot.slot_time)} />
+          <ReceiptRow label="Expected" value={fulfilment.dateLabel} />
           <ReceiptRow
             label="Total"
             value={formatMoney(useCase.price_minor, useCase.currency)}
@@ -877,10 +838,12 @@ function PaymentView({
 
 function ConfirmationView({
   booking,
+  fulfilment,
   onStatus,
   onHome,
 }: {
   booking: Booking;
+  fulfilment: FulfilmentExpectation;
   onStatus: () => void;
   onHome: () => void;
 }) {
@@ -894,10 +857,10 @@ function ConfirmationView({
       <p>
         Your {booking.ritual_title} booking is now <strong>{readableStatus(booking.status)}</strong>.
       </p>
+      <ServicePromise fulfilment={fulfilment} compact />
       <section className="receipt">
         <ReceiptRow label="Intent" value={booking.use_case_title ?? "Sankalp"} />
-        <ReceiptRow label="Date" value={formatDate(booking.preferred_date)} />
-        <ReceiptRow label="Time" value={formatTime(booking.preferred_time)} />
+        <ReceiptRow label="Expected" value={fulfilment.dateLabel} />
         <ReceiptRow label="Amount" value={formatMoney(booking.amount_minor, booking.currency)} />
       </section>
       <div className="action-row">
@@ -912,7 +875,15 @@ function ConfirmationView({
   );
 }
 
-function StatusView({ booking, onHome }: { booking: Booking; onHome: () => void }) {
+function StatusView({
+  booking,
+  fulfilment,
+  onHome,
+}: {
+  booking: Booking;
+  fulfilment: FulfilmentExpectation;
+  onHome: () => void;
+}) {
   const stages = [
     "pending_payment",
     "pending_assignment",
@@ -929,6 +900,7 @@ function StatusView({ booking, onHome }: { booking: Booking; onHome: () => void 
         <h1>{booking.ritual_title}</h1>
         <p>Current status: {readableStatus(booking.status)}</p>
       </section>
+      <ServicePromise fulfilment={fulfilment} compact />
       <section className="timeline">
         {stages.map((stage, index) => (
           <div className={index <= currentStage ? "done" : ""} key={stage}>
@@ -950,6 +922,30 @@ function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
       <span>{eyebrow}</span>
       <h2>{title}</h2>
     </header>
+  );
+}
+
+function ServicePromise({
+  fulfilment,
+  compact = false,
+}: {
+  fulfilment: FulfilmentExpectation;
+  compact?: boolean;
+}) {
+  return (
+    <section className={`service-promise ${compact ? "compact" : ""}`}>
+      <span className="promise-icon">
+        <Clock3 />
+      </span>
+      <div>
+        <small>Performance timeline</small>
+        <strong>
+          {fulfilment.title}
+          <em>{fulfilment.dateLabel}</em>
+        </strong>
+        <p>{fulfilment.detail}</p>
+      </div>
+    </section>
   );
 }
 

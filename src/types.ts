@@ -1,7 +1,6 @@
 export type Screen =
   | "home"
   | "ritual"
-  | "time"
   | "phone"
   | "otp"
   | "payment"
