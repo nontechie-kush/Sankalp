@@ -63,13 +63,6 @@ export interface AppData {
   faqs: Faq[];
 }
 
-export interface OtpChallenge {
-  challenge_id: string;
-  phone: string;
-  dev_otp: string;
-  expires_at?: string;
-}
-
 export interface VerifiedLead {
   lead_id: string;
   phone: string;

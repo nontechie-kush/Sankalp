@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import {
   ArrowLeft,
   ArrowRight,
@@ -35,7 +37,6 @@ import type {
   AppData,
   Booking,
   HomeBanner,
-  OtpChallenge,
   Ritual,
   RitualUseCase,
   Screen,
@@ -81,7 +82,8 @@ export default function App() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
-  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [lead, setLead] = useState<VerifiedLead | null>(null);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,6 +109,13 @@ export default function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (screen !== "otp") return;
+    setClockNow(Date.now());
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [screen]);
 
   const selectedUseCase = useMemo(
     () => data.useCases.find((item) => item.id === selectedUseCaseId) ?? data.useCases[0] ?? null,
@@ -175,32 +184,32 @@ export default function App() {
   }
 
   async function sendOtp() {
+    if (!phone) return;
     setBusy(true);
     setError(null);
     try {
-      const nextChallenge = await requestOtp(phone);
-      if (!nextChallenge) throw new Error("The OTP could not be sent.");
-      setChallenge(nextChallenge);
+      await requestOtp(phone, name);
       setOtp("");
+      setResendAvailableAt(Date.now() + 60_000);
+      setClockNow(Date.now());
       setScreen("otp");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The OTP could not be sent.");
+      setError(authErrorMessage(reason, "The OTP could not be sent."));
     } finally {
       setBusy(false);
     }
   }
 
   async function confirmOtp() {
-    if (!challenge) return;
     setBusy(true);
     setError(null);
     try {
-      const verifiedLead = await verifyOtp(challenge.challenge_id, phone, otp, name);
+      const verifiedLead = await verifyOtp(phone, otp, name);
       if (!verifiedLead) throw new Error("The OTP could not be verified.");
       setLead(verifiedLead);
       setScreen("payment");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The OTP could not be verified.");
+      setError(authErrorMessage(reason, "The OTP could not be verified."));
     } finally {
       setBusy(false);
     }
@@ -229,8 +238,9 @@ export default function App() {
     }
   }
 
-  const phoneIsValid = phone.replace(/\D/g, "").length >= 10 && name.trim().length > 1;
-  const otpIsValid = otp.trim().length >= 4;
+  const phoneIsValid = Boolean(phone && isValidPhoneNumber(phone) && name.trim().length > 1);
+  const otpIsValid = /^\d{6}$/.test(otp);
+  const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - clockNow) / 1000));
 
   return (
     <main className="page">
@@ -291,14 +301,16 @@ export default function App() {
           />
         )}
 
-        {!loading && screen === "otp" && challenge && (
+        {!loading && screen === "otp" && phone && (
           <OtpView
-            challenge={challenge}
+            phone={phone}
             fulfilment={fulfilment}
             otp={otp}
             busy={busy}
             error={error}
+            resendSeconds={resendSeconds}
             onOtp={(value) => setOtp(value.replace(/\D/g, ""))}
+            onResend={sendOtp}
             onVerify={confirmOtp}
             canVerify={otpIsValid}
           />
@@ -330,6 +342,26 @@ export default function App() {
       </section>
     </main>
   );
+}
+
+function authErrorMessage(reason: unknown, fallback: string) {
+  const message = reason instanceof Error ? reason.message : "";
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("rate") || normalized.includes("too many")) {
+    return "Too many OTP requests. Please wait a few minutes and try again.";
+  }
+  if (normalized.includes("expired")) {
+    return "This OTP has expired. Request a new code and try again.";
+  }
+  if (normalized.includes("invalid") && normalized.includes("token")) {
+    return "That OTP is incorrect. Check the six digits and try again.";
+  }
+  if (normalized.includes("phone")) {
+    return "Enter a valid mobile number with the correct country code.";
+  }
+
+  return message || fallback;
 }
 
 function screenTitle(screen: Screen) {
@@ -629,7 +661,7 @@ function RitualView({
         <section className="info-grid">
           <InfoTile icon={<ShieldCheck />} title="Verified pandit" text="Manually assigned for quality." />
           <InfoTile icon={<Sparkles />} title="Status tracking" text="Follow every booking step." />
-          <InfoTile icon={<Smartphone />} title="Phone verified" text="Dummy OTP now, SMS later." />
+          <InfoTile icon={<Smartphone />} title="Phone verified" text="Secure SMS verification." />
         </section>
 
         {relatedUseCases.length > 1 && (
@@ -698,16 +730,21 @@ function PhoneView({
             autoComplete="name"
           />
         </label>
-        <label>
-          Mobile number
-          <input
-            value={phone}
-            onChange={(event) => onPhone(event.target.value)}
-            inputMode="tel"
-            placeholder="98765 43210"
-            autoComplete="tel"
-          />
-        </label>
+        <label htmlFor="mobile-number">Mobile number</label>
+        <PhoneInput
+          id="mobile-number"
+          className="phone-number-input"
+          value={phone || undefined}
+          onChange={(value) => onPhone(value ?? "")}
+          defaultCountry="IN"
+          international
+          countryCallingCodeEditable={false}
+          placeholder="Enter mobile number"
+          autoComplete="tel"
+        />
+        <p className="field-note">
+          Select any country. New customers get a Sankalp account after OTP verification.
+        </p>
         {error && <InlineError message={error} />}
         <button
           className="primary-button full"
@@ -723,21 +760,25 @@ function PhoneView({
 }
 
 function OtpView({
-  challenge,
+  phone,
   fulfilment,
   otp,
   busy,
   error,
+  resendSeconds,
   onOtp,
+  onResend,
   onVerify,
   canVerify,
 }: {
-  challenge: OtpChallenge;
+  phone: string;
   fulfilment: FulfilmentExpectation;
   otp: string;
   busy: boolean;
   error: string | null;
+  resendSeconds: number;
   onOtp: (value: string) => void;
+  onResend: () => void;
   onVerify: () => void;
   canVerify: boolean;
 }) {
@@ -747,7 +788,7 @@ function OtpView({
         <span>OTP sent</span>
         <h1>Enter the verification code</h1>
         <p>
-          Development OTP for {challenge.phone}: <strong>{challenge.dev_otp}</strong>
+          We sent a 6-digit code to <strong>{phone}</strong>. It expires shortly.
         </p>
         <ServicePromise fulfilment={fulfilment} compact />
         <label>
@@ -757,10 +798,18 @@ function OtpView({
             onChange={(event) => onOtp(event.target.value)}
             inputMode="numeric"
             maxLength={6}
-            placeholder="1234"
+            placeholder="6-digit OTP"
             autoComplete="one-time-code"
           />
         </label>
+        <button
+          type="button"
+          className="text-button"
+          onClick={onResend}
+          disabled={busy || resendSeconds > 0}
+        >
+          {resendSeconds > 0 ? `Resend OTP in ${resendSeconds}s` : "Resend OTP"}
+        </button>
         {error && <InlineError message={error} />}
         <button
           className="primary-button full"

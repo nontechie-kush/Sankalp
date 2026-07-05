@@ -36,7 +36,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -47,6 +48,7 @@ button {
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 summary:focus-visible {
   outline: 3px solid rgba(189, 104, 66, 0.32);
   outline-offset: 2px;
@@ -999,6 +1001,67 @@ p {
 .form-card input:focus {
   border-color: rgba(189, 104, 66, 0.6);
   box-shadow: 0 0 0 4px rgba(189, 104, 66, 0.11);
+}
+
+.form-card .phone-number-input {
+  width: 100%;
+  height: 52px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  padding: 0 14px;
+}
+
+.form-card .phone-number-input:focus-within {
+  border-color: rgba(189, 104, 66, 0.6);
+  box-shadow: 0 0 0 4px rgba(189, 104, 66, 0.11);
+}
+
+.form-card .phone-number-input .PhoneInputCountryIcon {
+  display: none;
+}
+
+.form-card .phone-number-input .PhoneInputCountry::before {
+  content: "🌐";
+  font-size: 18px;
+  line-height: 1;
+}
+
+.form-card .phone-number-input input {
+  height: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 0 10px;
+  box-shadow: none;
+}
+
+.form-card .phone-number-input input:focus {
+  box-shadow: none;
+}
+
+.form-card .field-note {
+  margin-top: 7px;
+  font-size: 11px;
+}
+
+.text-button {
+  min-height: 38px;
+  margin-top: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--clay-dark);
+  padding: 0;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.text-button:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  opacity: 0.7;
 }
 
 .form-card .primary-button {

@@ -34,34 +34,29 @@ test("loads live catalogue data and reaches phone verification without slot sele
 test("keeps the fulfilment promise visible through payment, confirmation, and status", async ({
   page,
 }) => {
+  const accessToken =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMDAwMDAwMDAwLCJzdWIiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJwaG9uZSI6Iis5MTkwMDAwMDA3MDciLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.test-signature";
   const rpcResponses: Record<string, unknown> = {
-    request_mweb_otp: [
-      {
-        challenge_id: "11111111-1111-4111-8111-111111111111",
-        phone: "+919000000707",
-        dev_otp: "1234",
-      },
-    ],
-    verify_mweb_otp: [
+    upsert_mweb_authenticated_lead: [
       {
         lead_id: "22222222-2222-4222-8222-222222222222",
         phone: "+919000000707",
         name: "Policy Test",
       },
     ],
-    create_mweb_booking: [
+    create_authenticated_mweb_booking: [
       {
         booking_id: "33333333-3333-4333-8333-333333333333",
         booking_number: "SKTEST1",
       },
     ],
-    mock_pay_mweb_booking: [
+    mock_pay_authenticated_mweb_booking: [
       {
         booking_id: "33333333-3333-4333-8333-333333333333",
         status: "pending_assignment",
       },
     ],
-    get_mweb_booking: [
+    get_authenticated_mweb_booking: [
       {
         booking_id: "33333333-3333-4333-8333-333333333333",
         booking_number: "SKTEST1",
@@ -76,6 +71,36 @@ test("keeps the fulfilment promise visible through payment, confirmation, and st
     ],
   };
 
+  await page.route("**/auth/v1/otp", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+
+  await page.route("**/auth/v1/verify", async (route) => {
+    const now = new Date().toISOString();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        access_token: accessToken,
+        token_type: "bearer",
+        expires_in: 3600,
+        refresh_token: "test-refresh-token",
+        user: {
+          id: "22222222-2222-4222-8222-222222222222",
+          aud: "authenticated",
+          role: "authenticated",
+          phone: "+919000000707",
+          phone_confirmed_at: now,
+          user_metadata: { full_name: "Policy Test" },
+          app_metadata: { provider: "phone", providers: ["phone"] },
+          identities: [],
+          created_at: now,
+          updated_at: now,
+        },
+      }),
+    });
+  });
+
   await page.route("**/rest/v1/rpc/**", async (route) => {
     const rpcName = new URL(route.request().url()).pathname.split("/").at(-1) ?? "";
     const body = rpcResponses[rpcName];
@@ -89,7 +114,9 @@ test("keeps the fulfilment promise visible through payment, confirmation, and st
   await page.getByLabel("Name").fill("Policy Test");
   await page.getByLabel("Mobile number").fill("9000000707");
   await page.getByRole("button", { name: /Send OTP/ }).click();
-  await page.getByLabel("OTP").fill("1234");
+  await expect(page.getByText("We sent a 6-digit code")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Resend OTP in/ })).toBeDisabled();
+  await page.getByLabel("OTP").fill("123456");
   await page.getByRole("button", { name: /^Verify$/ }).click();
 
   await expect(page.getByText("Payment", { exact: true })).toBeVisible();
