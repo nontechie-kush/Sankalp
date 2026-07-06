@@ -57,18 +57,17 @@ export async function loadAppData(): Promise<AppData> {
   };
 }
 
-export async function requestOtp(phone: string, name: string) {
+export async function requestOtp(phone: string) {
   const { error } = await supabase.auth.signInWithOtp({
     phone,
     options: {
       shouldCreateUser: true,
-      data: { full_name: name.trim() },
     },
   });
   if (error) throw error;
 }
 
-export async function verifyOtp(phone: string, code: string, leadName: string) {
+export async function verifyOtp(phone: string, code: string) {
   const verification = await supabase.auth.verifyOtp({
     phone,
     token: code,
@@ -77,7 +76,7 @@ export async function verifyOtp(phone: string, code: string, leadName: string) {
   if (verification.error) throw verification.error;
 
   const { data, error } = await supabase.rpc("upsert_mweb_authenticated_lead", {
-    lead_name: leadName || null,
+    lead_name: null,
   });
   if (error) throw error;
   return (data?.[0] ?? null) as VerifiedLead | null;

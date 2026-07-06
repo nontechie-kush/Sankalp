@@ -23,10 +23,11 @@ test("guest booking creates a member session and reaches server-backed status", 
     await expect(page.getByRole("button", { name: /Choose time/ })).toHaveCount(0);
     await sankalp.continueBooking();
     await expect(page).toHaveURL(/\/auth\/phone$/);
+    await expect(page.getByLabel("Name")).toHaveCount(0);
   });
 
   await test.step("verify the phone and create the account", async () => {
-    await sankalp.completePhoneLogin({ withName: true });
+    await sankalp.completePhoneLogin();
     await expect(page).toHaveURL(/\/checkout\/payment$/);
     await expect(page.getByText("Payment", { exact: true })).toBeVisible();
   });
@@ -50,13 +51,14 @@ test("refreshing an unverified OTP screen safely returns to phone entry", async 
   await sankalp.goto();
   await sankalp.chooseRitual();
   await sankalp.continueBooking();
-  await sankalp.requestOtp({ withName: true });
+  await sankalp.requestOtp();
   await expect(page).toHaveURL(/\/auth\/otp$/);
 
   await page.reload();
 
   await expect(page).toHaveURL(/\/auth\/phone$/);
-  await expect(sankalp.nameInput).toBeVisible();
+  await expect(sankalp.phoneInput).toBeVisible();
+  await expect(page.getByLabel("Name")).toHaveCount(0);
   await expect(page.getByText(/Booking New job/)).toBeVisible();
 });
 
@@ -128,7 +130,7 @@ test("guest opening protected bookings route is redirected to sign in", async ({
 
   await expect(page).toHaveURL(/\/auth\/phone$/);
   await expect(page.getByRole("heading", { name: "Where should we send the OTP?" })).toBeVisible();
-  await expect(sankalp.nameInput).toHaveCount(0);
+  await expect(page.getByLabel("Name")).toHaveCount(0);
 });
 
 test("invalid OTP displays an actionable error", async ({ page, sankalp, mockApi }) => {

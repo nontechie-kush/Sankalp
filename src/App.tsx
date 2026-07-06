@@ -119,7 +119,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<BookingDraft | null>(() => loadBookingDraft());
   const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -147,10 +146,6 @@ export default function App() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (auth.profile?.name && !name) setName(auth.profile.name);
-  }, [auth.profile?.name, name]);
 
   useEffect(() => {
     if (!draft) return;
@@ -340,7 +335,7 @@ export default function App() {
     setBusy(true);
     setError(null);
     try {
-      await requestOtp(phone, name);
+      await requestOtp(phone);
       setOtp("");
       setResendAvailableAt(Date.now() + 60_000);
       setClockNow(Date.now());
@@ -356,7 +351,7 @@ export default function App() {
     setBusy(true);
     setError(null);
     try {
-      const verifiedLead = await verifyOtp(phone, otp, name);
+      const verifiedLead = await verifyOtp(phone, otp);
       if (!verifiedLead) throw new Error("The OTP could not be verified.");
       await auth.refreshProfile();
       go(consumeAuthReturnTo(draft ? "/checkout/payment" : "/bookings"), true);
@@ -376,7 +371,7 @@ export default function App() {
         ritualId: selectedRitual.id,
         useCaseId: selectedUseCase.id,
         slotId: selectedSlot?.id ?? null,
-        customerName: auth.profile?.name || name || "Sankalp customer",
+        customerName: auth.profile?.name || "Sankalp customer",
         intentNote: `${selectedUseCase.title}. ${fulfilment.title} (${fulfilment.dateLabel}). ${fulfilment.detail}`,
         clientRequestId: draft.clientRequestId,
       });
@@ -419,7 +414,6 @@ export default function App() {
       clearBookingDraft();
       setDraft(null);
       setPhone("");
-      setName("");
       setOtp("");
       setBookings([]);
       setCurrentBooking(null);
@@ -434,9 +428,7 @@ export default function App() {
     }
   }
 
-  const phoneIsValid = Boolean(
-    phone && isValidPhoneNumber(phone) && (!draft || name.trim().length > 1),
-  );
+  const phoneIsValid = Boolean(phone && isValidPhoneNumber(phone));
   const otpIsValid = /^\d{6}$/.test(otp);
   const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - clockNow) / 1000));
   const checkoutScreen: Screen | null = location.pathname.startsWith("/ritual/")
@@ -487,12 +479,10 @@ export default function App() {
     content = (
       <PhoneView
         phone={phone}
-        name={name}
         error={error}
         busy={busy}
         useCase={selectedUseCase}
         fulfilment={draft ? fulfilment : undefined}
-        onName={setName}
         onPhone={setPhone}
         onContinue={sendOtp}
         canContinue={phoneIsValid}
@@ -1020,23 +1010,19 @@ function RitualView({
 
 function PhoneView({
   phone,
-  name,
   error,
   busy,
   useCase,
   fulfilment,
-  onName,
   onPhone,
   onContinue,
   canContinue,
 }: {
   phone: string;
-  name: string;
   error: string | null;
   busy: boolean;
   useCase: RitualUseCase | null;
   fulfilment?: FulfilmentExpectation;
-  onName: (value: string) => void;
   onPhone: (value: string) => void;
   onContinue: () => void;
   canContinue: boolean;
@@ -1052,17 +1038,6 @@ function PhoneView({
             : "Sign in to view your bookings and continue securely on any device."}
         </p>
         {fulfilment && <ServicePromise fulfilment={fulfilment} compact />}
-        {useCase && (
-          <label>
-            Name
-            <input
-              value={name}
-              onChange={(event) => onName(event.target.value)}
-              placeholder="Your name"
-              autoComplete="name"
-            />
-          </label>
-        )}
         <label htmlFor="mobile-number">Mobile number</label>
         <PhoneInput
           id="mobile-number"
@@ -1076,7 +1051,7 @@ function PhoneView({
           autoComplete="tel"
         />
         <p className="field-note">
-          Select any country. New customers get a Sankalp account after OTP verification.
+          Use the same phone number each time. We will securely sign you in after verification.
         </p>
         {error && <InlineError message={error} />}
         <button

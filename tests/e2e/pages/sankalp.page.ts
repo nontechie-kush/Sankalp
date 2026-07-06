@@ -13,10 +13,6 @@ export class SankalpPage {
     return this.page.getByLabel("Mobile number");
   }
 
-  get nameInput() {
-    return this.page.getByLabel("Name");
-  }
-
   get otpInput() {
     return this.page.getByLabel("OTP");
   }
@@ -37,8 +33,7 @@ export class SankalpPage {
     await this.page.getByRole("button", { name: /Continue booking/ }).click();
   }
 
-  async requestOtp({ withName = false }: { withName?: boolean } = {}) {
-    if (withName) await this.nameInput.fill("Policy Test");
+  async requestOtp() {
     await this.phoneInput.fill("9000000707");
     await this.page.getByRole("button", { name: /Send OTP/ }).click();
   }
@@ -48,8 +43,8 @@ export class SankalpPage {
     await this.page.getByRole("button", { name: "Verify", exact: true }).click();
   }
 
-  async completePhoneLogin({ withName = false }: { withName?: boolean } = {}) {
-    await this.requestOtp({ withName });
+  async completePhoneLogin() {
+    await this.requestOtp();
     await this.verifyOtp();
   }
 
