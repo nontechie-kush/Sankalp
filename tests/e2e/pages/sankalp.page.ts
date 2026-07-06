@@ -69,6 +69,7 @@ export class SankalpPage {
 
     if (birthPlace) {
       await this.page.getByLabel(/Place of birth/).fill(birthPlace);
+      await this.page.getByRole("option", { name: /Mumbai.*Maharashtra/ }).click();
       await this.page.getByRole("button", { name: /Save profile/ }).click();
     } else {
       await this.page.getByRole("button", { name: /Skip for now/ }).click();

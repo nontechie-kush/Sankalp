@@ -15,6 +15,8 @@ export const profile: MemberProfile = {
   name: "Policy Test",
   date_of_birth: "1990-01-15",
   place_of_birth: "Mumbai",
+  place_of_birth_id: "ChIJwe1EZjDG5zsRaYxkjY_tpF0",
+  place_of_birth_provider: "google",
   profile_completed_at: "2026-07-06T07:00:00Z",
 };
 
@@ -23,6 +25,8 @@ export const incompleteProfile: MemberProfile = {
   name: null,
   date_of_birth: null,
   place_of_birth: null,
+  place_of_birth_id: null,
+  place_of_birth_provider: null,
   profile_completed_at: null,
 };
 
@@ -144,17 +148,35 @@ export class SankalpMockApi {
       await route.fulfill({ status: 204, body: "" });
     });
 
+    await this.page.route("**/functions/v1/place-autocomplete", async (route) => {
+      const input = (route.request().postDataJSON() as { input?: string }).input ?? "";
+      await route.fulfill({
+        status: 200,
+        json: {
+          suggestions: [{
+            id: "ChIJwe1EZjDG5zsRaYxkjY_tpF0",
+            text: "Mumbai, Maharashtra, India",
+            mainText: input.toLowerCase().includes("bombay") ? "Mumbai" : "Mumbai",
+            secondaryText: "Maharashtra, India",
+          }],
+          attribution: "Google Maps",
+        },
+      });
+    });
+
     await this.page.route("**/rest/v1/rpc/**", async (route) => {
       const rpcName = new URL(route.request().url()).pathname.split("/").at(-1) ?? "";
       let body: unknown;
 
       if (rpcName === "get_my_mweb_profile") body = [this.storedProfile];
       else if (rpcName === "upsert_mweb_authenticated_lead") body = [this.storedProfile];
-      else if (rpcName === "update_my_mweb_profile") {
+      else if (rpcName === "update_my_mweb_profile_v2") {
         const input = route.request().postDataJSON() as {
           p_name: string;
           p_date_of_birth: string | null;
           p_place_of_birth: string | null;
+          p_place_of_birth_id: string | null;
+          p_place_of_birth_provider: "google" | "legacy" | null;
           p_complete: boolean;
         };
         this.storedProfile = {
@@ -162,6 +184,8 @@ export class SankalpMockApi {
           name: input.p_name,
           date_of_birth: input.p_date_of_birth,
           place_of_birth: input.p_place_of_birth,
+          place_of_birth_id: input.p_place_of_birth_id,
+          place_of_birth_provider: input.p_place_of_birth_provider,
           profile_completed_at: input.p_complete
             ? (this.storedProfile.profile_completed_at ?? "2026-07-06T09:00:00Z")
             : this.storedProfile.profile_completed_at,

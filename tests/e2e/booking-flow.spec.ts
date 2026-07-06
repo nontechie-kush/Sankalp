@@ -136,6 +136,10 @@ test("saved ritual profile is shown once and can be updated without re-entry", a
   await expect(page.getByLabel(/Date of birth/)).toHaveValue("1990-01-15");
   await page.getByRole("button", { name: /Save and continue/ }).click();
   await expect(page.getByLabel(/Place of birth/)).toHaveValue("Mumbai");
+  await page.getByLabel(/Place of birth/).fill("Made up place");
+  await expect(page.getByRole("button", { name: /Save profile/ })).toBeDisabled();
+  await page.getByRole("option", { name: /Mumbai.*Maharashtra/ }).click();
+  await expect(page.getByRole("button", { name: /Save profile/ })).toBeEnabled();
   await page.getByRole("button", { name: /Save profile/ }).click();
   await expect(page).toHaveURL(/\/account$/);
 });

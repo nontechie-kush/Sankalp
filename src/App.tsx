@@ -41,6 +41,7 @@ import {
   loadMyBookings,
   payMyBooking,
   requestOtp,
+  searchBirthPlaces,
   updateMyProfile,
   verifyOtp,
 } from "./lib/api";
@@ -70,6 +71,7 @@ import type {
   Ritual,
   RitualUseCase,
   Screen,
+  PlaceSuggestion,
 } from "./types";
 
 const emptyData: AppData = {
@@ -125,6 +127,8 @@ export default function App() {
   const [profileName, setProfileName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
+  const [birthPlaceId, setBirthPlaceId] = useState<string | null>(null);
+  const [birthPlaceProvider, setBirthPlaceProvider] = useState<"google" | "legacy" | null>(null);
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -157,6 +161,8 @@ export default function App() {
     setProfileName(auth.profile.name ?? "");
     setBirthDate(auth.profile.date_of_birth ?? "");
     setBirthPlace(auth.profile.place_of_birth ?? "");
+    setBirthPlaceId(auth.profile.place_of_birth_id ?? null);
+    setBirthPlaceProvider(auth.profile.place_of_birth_provider ?? null);
   }, [auth.profile]);
 
   useEffect(() => {
@@ -376,7 +382,15 @@ export default function App() {
     }
   }
 
-  async function saveProfile(nextPath: string, complete = false) {
+  async function saveProfile(
+    nextPath: string,
+    complete = false,
+    placeOverride?: {
+      value: string | null;
+      id: string | null;
+      provider: "google" | "legacy" | null;
+    },
+  ) {
     const cleanName = profileName.trim();
     if (cleanName.length < 2) {
       setError("Enter your full name to continue.");
@@ -389,7 +403,9 @@ export default function App() {
       const updated = await updateMyProfile({
         name: cleanName,
         dateOfBirth: birthDate || null,
-        placeOfBirth: birthPlace.trim() || null,
+        placeOfBirth: placeOverride ? placeOverride.value : birthPlace.trim() || null,
+        placeOfBirthId: placeOverride ? placeOverride.id : birthPlaceId,
+        placeOfBirthProvider: placeOverride ? placeOverride.provider : birthPlaceProvider,
         complete,
       });
       if (!updated) throw new Error("Your profile could not be saved.");
@@ -463,6 +479,8 @@ export default function App() {
       setProfileName("");
       setBirthDate("");
       setBirthPlace("");
+      setBirthPlaceId(null);
+      setBirthPlaceProvider(null);
       setBookings([]);
       setCurrentBooking(null);
     } catch (reason) {
@@ -520,6 +538,10 @@ export default function App() {
         onPrimary={() => data.useCases[0] && selectUseCase(data.useCases[0])}
       />
     );
+  } else if (location.pathname === "/privacy") {
+    content = <LegalView page="privacy" />;
+  } else if (location.pathname === "/terms") {
+    content = <LegalView page="terms" />;
   } else if (location.pathname === "/profile/name" && auth.status === "authenticated") {
     content = (
       <ProfileNameView
@@ -545,11 +567,25 @@ export default function App() {
     content = (
       <ProfileBirthPlaceView
         value={birthPlace}
+        selectedPlaceId={birthPlaceId}
         busy={busy}
         error={error}
-        onChange={setBirthPlace}
+        onChange={(value) => {
+          setBirthPlace(value);
+          setBirthPlaceId(null);
+          setBirthPlaceProvider(null);
+        }}
+        onSelect={(suggestion) => {
+          setBirthPlace(suggestion.text);
+          setBirthPlaceId(suggestion.id);
+          setBirthPlaceProvider("google");
+        }}
         onContinue={() => void saveProfile("", true)}
-        onSkip={() => void saveProfile("", true)}
+        onSkip={() => void saveProfile("", true, {
+          value: auth.profile?.place_of_birth ?? null,
+          id: auth.profile?.place_of_birth_id ?? null,
+          provider: auth.profile?.place_of_birth_provider ?? null,
+        })}
       />
     );
   } else if (location.pathname.startsWith("/ritual/") && selectedRitual && selectedUseCase) {
@@ -1053,8 +1089,69 @@ function HomeView({
       <footer className="site-footer">
         <span>Sankalp by Tathastu</span>
         <small>Thoughtful rituals, clearly coordinated.</small>
+        <nav aria-label="Legal">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </nav>
       </footer>
     </div>
+  );
+}
+
+function LegalView({ page }: { page: "privacy" | "terms" }) {
+  return (
+    <article className="legal-page">
+      <span>Sankalp by Tathastu</span>
+      <h1>{page === "privacy" ? "Privacy Policy" : "Terms of Use"}</h1>
+      <p>Last updated: 6 July 2026</p>
+      {page === "privacy" ? (
+        <>
+          <h2>Information we use</h2>
+          <p>
+            We use your verified phone number, name and any optional birth details you provide to
+            manage your Sankalp account, prepare ritual bookings and show booking status.
+          </p>
+          <h2>Place suggestions</h2>
+          <p>
+            When you search for a place of birth, your search text is sent securely through our
+            server to Google Maps Platform. We save the place you select and its Google place ID;
+            we do not cache the suggestion list.
+          </p>
+          <h2>Your choices</h2>
+          <p>
+            Date and place of birth are optional. You can update them from your account. Contact
+            booking support if you want account information corrected or deleted.
+          </p>
+          <p>
+            Google processes Places searches under the{" "}
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">
+              Google Privacy Policy
+            </a>.
+          </p>
+        </>
+      ) : (
+        <>
+          <h2>Using Sankalp</h2>
+          <p>
+            Provide accurate booking and ritual-profile information, keep access to your verified
+            phone secure, and do not misuse the booking or place-search services.
+          </p>
+          <h2>Ritual scheduling</h2>
+          <p>
+            Performance dates are service expectations. Bookings before 2 PM are normally handled
+            the same day unless the day is inauspicious; later bookings are handled by the end of
+            the next day.
+          </p>
+          <h2>Google Maps Platform</h2>
+          <p>
+            Place suggestions are provided by Google Maps and are also subject to the{" "}
+            <a href="https://cloud.google.com/maps-platform/terms" target="_blank" rel="noreferrer">
+              Google Maps Platform Terms
+            </a>.
+          </p>
+        </>
+      )}
+    </article>
   );
 }
 
@@ -1279,19 +1376,62 @@ function ProfileBirthDateView({
 
 function ProfileBirthPlaceView({
   value,
+  selectedPlaceId,
   busy,
   error,
   onChange,
+  onSelect,
   onContinue,
   onSkip,
 }: {
   value: string;
+  selectedPlaceId: string | null;
   busy: boolean;
   error: string | null;
   onChange: (value: string) => void;
+  onSelect: (suggestion: PlaceSuggestion) => void;
   onContinue: () => void;
   onSkip: () => void;
 }) {
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const query = value.trim();
+    if (selectedPlaceId || query.length < 3) {
+      setSuggestions([]);
+      setSearching(false);
+      setSearchError(null);
+      return;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setSearching(true);
+      setSearchError(null);
+      void searchBirthPlaces(query)
+        .then((items) => {
+          if (!active) return;
+          setSuggestions(items);
+          if (items.length === 0) setSearchError("No matching place found. Try a nearby city or district.");
+        })
+        .catch((reason: unknown) => {
+          if (active) setSearchError(errorMessage(reason) || "Place search is unavailable.");
+        })
+        .finally(() => {
+          if (active) setSearching(false);
+        });
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [selectedPlaceId, value]);
+
+  const needsSelection = value.trim().length > 0 && !selectedPlaceId;
+
   return (
     <ProfileFormShell
       eyebrow="Optional"
@@ -1306,9 +1446,42 @@ function ProfileBirthPlaceView({
         onChange={(event) => onChange(event.target.value)}
         placeholder="City, State or Country"
         autoComplete="off"
+        aria-autocomplete="list"
+        aria-controls="birth-place-suggestions"
+        aria-expanded={suggestions.length > 0}
       />
+      {searching && <p className="place-search-status"><LoaderCircle className="spin" /> Searching places...</p>}
+      {suggestions.length > 0 && (
+        <div className="place-suggestions" id="birth-place-suggestions" role="listbox" aria-label="Place suggestions">
+          {suggestions.map((suggestion) => (
+            <button
+              type="button"
+              role="option"
+              aria-selected={false}
+              onClick={() => {
+                onSelect(suggestion);
+                setSuggestions([]);
+                setSearchError(null);
+              }}
+              key={suggestion.id}
+            >
+              <MapPin />
+              <span>
+                <strong>{suggestion.mainText}</strong>
+                {suggestion.secondaryText && <small>{suggestion.secondaryText}</small>}
+              </span>
+            </button>
+          ))}
+          <small className="google-attribution" translate="no">Google Maps</small>
+        </div>
+      )}
+      {selectedPlaceId && <p className="place-selected"><Check /> Place selected</p>}
+      {searchError && <p className="place-search-error" role="alert">{searchError}</p>}
+      {needsSelection && !searching && !searchError && suggestions.length === 0 && (
+        <p className="field-note">Choose one of the verified place suggestions to save it.</p>
+      )}
       <ProfilePrivacyNote />
-      <button className="primary-button full" onClick={onContinue} disabled={busy}>
+      <button className="primary-button full" onClick={onContinue} disabled={busy || needsSelection}>
         {busy ? <LoaderCircle className="spin" /> : <Check />}
         Save profile
       </button>

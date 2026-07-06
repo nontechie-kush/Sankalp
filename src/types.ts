@@ -73,7 +73,16 @@ export interface MemberProfile extends VerifiedLead {
   user_id?: string;
   date_of_birth: string | null;
   place_of_birth: string | null;
+  place_of_birth_id: string | null;
+  place_of_birth_provider: "google" | "legacy" | null;
   profile_completed_at: string | null;
+}
+
+export interface PlaceSuggestion {
+  id: string;
+  text: string;
+  mainText: string;
+  secondaryText: string;
 }
 
 export interface BookingDraft {

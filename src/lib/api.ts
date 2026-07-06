@@ -5,6 +5,7 @@ import type {
   Booking,
   CreatedBooking,
   MemberProfile,
+  PlaceSuggestion,
   VerifiedLead,
 } from "../types";
 
@@ -92,16 +93,36 @@ export async function updateMyProfile(input: {
   name: string;
   dateOfBirth: string | null;
   placeOfBirth: string | null;
+  placeOfBirthId: string | null;
+  placeOfBirthProvider: "google" | "legacy" | null;
   complete?: boolean;
 }) {
-  const { data, error } = await supabase.rpc("update_my_mweb_profile", {
+  const { data, error } = await supabase.rpc("update_my_mweb_profile_v2", {
     p_name: input.name,
     p_date_of_birth: input.dateOfBirth,
     p_place_of_birth: input.placeOfBirth,
+    p_place_of_birth_id: input.placeOfBirthId,
+    p_place_of_birth_provider: input.placeOfBirthProvider,
     p_complete: input.complete ?? false,
   });
   if (error) throw error;
   return (data?.[0] ?? null) as MemberProfile | null;
+}
+
+export async function searchBirthPlaces(input: string): Promise<PlaceSuggestion[]> {
+  const { data, error } = await supabase.functions.invoke("place-autocomplete", {
+    body: { input },
+  });
+  if (error) {
+    let message = error.message;
+    const context = "context" in error ? error.context : null;
+    if (context instanceof Response) {
+      const body = await context.clone().json().catch(() => null) as { error?: string } | null;
+      message = body?.error || message;
+    }
+    throw new Error(message);
+  }
+  return (data?.suggestions ?? []) as PlaceSuggestion[];
 }
 
 export async function loadMyBookings() {
