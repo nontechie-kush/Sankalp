@@ -71,6 +71,9 @@ export interface VerifiedLead {
 
 export interface MemberProfile extends VerifiedLead {
   user_id?: string;
+  date_of_birth: string | null;
+  place_of_birth: string | null;
+  profile_completed_at: string | null;
 }
 
 export interface BookingDraft {

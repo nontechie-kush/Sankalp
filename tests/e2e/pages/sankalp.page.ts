@@ -48,6 +48,33 @@ export class SankalpPage {
     await this.verifyOtp();
   }
 
+  async completeFirstTimeProfile({
+    name = "Policy Test",
+    birthDate,
+    birthPlace,
+  }: {
+    name?: string;
+    birthDate?: string;
+    birthPlace?: string;
+  } = {}) {
+    await this.page.getByLabel("Full name").fill(name);
+    await this.page.getByRole("button", { name: "Continue", exact: true }).click();
+
+    if (birthDate) {
+      await this.page.getByLabel(/Date of birth/).fill(birthDate);
+      await this.page.getByRole("button", { name: /Save and continue/ }).click();
+    } else {
+      await this.page.getByRole("button", { name: /Skip for now/ }).click();
+    }
+
+    if (birthPlace) {
+      await this.page.getByLabel(/Place of birth/).fill(birthPlace);
+      await this.page.getByRole("button", { name: /Save profile/ }).click();
+    } else {
+      await this.page.getByRole("button", { name: /Skip for now/ }).click();
+    }
+  }
+
   bookingArticle(bookingNumber: string): Locator {
     return this.page.getByRole("article", { name: new RegExp(bookingNumber) });
   }

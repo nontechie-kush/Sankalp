@@ -41,6 +41,7 @@ import {
   loadMyBookings,
   payMyBooking,
   requestOtp,
+  updateMyProfile,
   verifyOtp,
 } from "./lib/api";
 import {
@@ -57,6 +58,7 @@ import {
   getBookingFulfilmentExpectation,
   getFulfilmentExpectation,
   readableStatus,
+  todayIso,
   type FulfilmentExpectation,
 } from "./lib/format";
 import type {
@@ -120,6 +122,9 @@ export default function App() {
   const [draft, setDraft] = useState<BookingDraft | null>(() => loadBookingDraft());
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [profileName, setProfileName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [birthPlace, setBirthPlace] = useState("");
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -146,6 +151,13 @@ export default function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!auth.profile) return;
+    setProfileName(auth.profile.name ?? "");
+    setBirthDate(auth.profile.date_of_birth ?? "");
+    setBirthPlace(auth.profile.place_of_birth ?? "");
+  }, [auth.profile]);
 
   useEffect(() => {
     if (!draft) return;
@@ -233,6 +245,7 @@ export default function App() {
 
   const protectedRoute =
     location.pathname === "/account" ||
+    location.pathname.startsWith("/profile/") ||
     location.pathname === "/bookings" ||
     location.pathname.startsWith("/bookings/") ||
     location.pathname.startsWith("/booking-confirmed/") ||
@@ -353,13 +366,49 @@ export default function App() {
     try {
       const verifiedLead = await verifyOtp(phone, otp);
       if (!verifiedLead) throw new Error("The OTP could not be verified.");
-      await auth.refreshProfile();
-      go(consumeAuthReturnTo(draft ? "/checkout/payment" : "/bookings"), true);
+      const verifiedProfile = await auth.refreshProfile();
+      if (!verifiedProfile) throw new Error("Your Sankalp profile could not be loaded.");
+      if (!verifiedProfile.profile_completed_at) {
+        go("/profile/name", true);
+      } else {
+        go(consumeAuthReturnTo(draft ? "/checkout/payment" : "/bookings"), true);
+      }
     } catch (reason) {
       setError(authErrorMessage(reason, "The OTP could not be verified."));
     } finally {
       setBusy(false);
     }
+  }
+
+  async function saveProfile(nextPath: string, complete = false) {
+    const cleanName = profileName.trim();
+    if (cleanName.length < 2) {
+      setError("Enter your full name to continue.");
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await updateMyProfile({
+        name: cleanName,
+        dateOfBirth: birthDate || null,
+        placeOfBirth: birthPlace.trim() || null,
+        complete,
+      });
+      if (!updated) throw new Error("Your profile could not be saved.");
+      await auth.refreshProfile();
+      go(complete ? consumeAuthReturnTo(draft ? "/checkout/payment" : "/bookings") : nextPath, true);
+    } catch (reason) {
+      setError(errorMessage(reason) || "Your profile could not be saved.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function editProfile() {
+    saveAuthReturnTo("/account");
+    go("/profile/name");
   }
 
   async function pay() {
@@ -415,6 +464,9 @@ export default function App() {
       setDraft(null);
       setPhone("");
       setOtp("");
+      setProfileName("");
+      setBirthDate("");
+      setBirthPlace("");
       setBookings([]);
       setCurrentBooking(null);
     } catch (reason) {
@@ -431,6 +483,13 @@ export default function App() {
   const phoneIsValid = Boolean(phone && isValidPhoneNumber(phone));
   const otpIsValid = /^\d{6}$/.test(otp);
   const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - clockNow) / 1000));
+  const profileStep = location.pathname === "/profile/name"
+    ? 1
+    : location.pathname === "/profile/birth-date"
+      ? 2
+      : location.pathname === "/profile/birth-place"
+        ? 3
+        : null;
   const checkoutScreen: Screen | null = location.pathname.startsWith("/ritual/")
     ? "ritual"
     : location.pathname === "/auth/phone" && draft
@@ -457,11 +516,44 @@ export default function App() {
     content = (
       <HomeView
         data={data}
+        memberName={auth.profile?.name ?? null}
         groupedUseCases={groupedUseCases}
         error={error}
         onBanner={selectBanner}
         onUseCase={selectUseCase}
         onPrimary={() => data.useCases[0] && selectUseCase(data.useCases[0])}
+      />
+    );
+  } else if (location.pathname === "/profile/name" && auth.status === "authenticated") {
+    content = (
+      <ProfileNameView
+        value={profileName}
+        busy={busy}
+        error={error}
+        onChange={setProfileName}
+        onContinue={() => void saveProfile("/profile/birth-date")}
+      />
+    );
+  } else if (location.pathname === "/profile/birth-date" && auth.status === "authenticated") {
+    content = (
+      <ProfileBirthDateView
+        value={birthDate}
+        busy={busy}
+        error={error}
+        onChange={setBirthDate}
+        onContinue={() => void saveProfile("/profile/birth-place")}
+        onSkip={() => void saveProfile("/profile/birth-place")}
+      />
+    );
+  } else if (location.pathname === "/profile/birth-place" && auth.status === "authenticated") {
+    content = (
+      <ProfileBirthPlaceView
+        value={birthPlace}
+        busy={busy}
+        error={error}
+        onChange={setBirthPlace}
+        onContinue={() => void saveProfile("", true)}
+        onSkip={() => void saveProfile("", true)}
       />
     );
   } else if (location.pathname.startsWith("/ritual/") && selectedRitual && selectedUseCase) {
@@ -577,6 +669,7 @@ export default function App() {
         busy={busy}
         error={error}
         onBookings={() => go("/bookings")}
+        onEditProfile={editProfile}
         onSignOut={handleSignOut}
       />
     );
@@ -625,6 +718,12 @@ export default function App() {
             title={screenTitle(checkoutScreen)}
             onBack={() => go(checkoutBackPath(checkoutScreen))}
             muted={checkoutScreen === "confirm"}
+          />
+        )}
+        {profileStep && (
+          <ProfileNavigation
+            step={profileStep}
+            onBack={profileStep === 1 ? undefined : () => go(profileStep === 2 ? "/profile/name" : "/profile/birth-date")}
           />
         )}
         {content}
@@ -785,6 +884,28 @@ function CheckoutNavigation({
   );
 }
 
+function ProfileNavigation({ step, onBack }: { step: number; onBack?: () => void }) {
+  return (
+    <nav className="checkout-nav" aria-label="Profile setup progress">
+      <div className="checkout-nav-row">
+        <button className="back-button" onClick={onBack} disabled={!onBack}>
+          <ArrowLeft /> Back
+        </button>
+        <div className="checkout-title">
+          <span>Profile setup</span>
+          <strong>{step === 1 ? "Full name" : step === 2 ? "Birth date" : "Birth place"}</strong>
+        </div>
+        <span className="step-count">{step}/3</span>
+      </div>
+      <div className="progress-track" aria-hidden="true">
+        {[1, 2, 3].map((item) => (
+          <i className={item <= step ? "active" : ""} key={item} />
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 function LoadingState() {
   return (
     <div className="center-state" role="status">
@@ -796,6 +917,7 @@ function LoadingState() {
 
 function HomeView({
   data,
+  memberName,
   groupedUseCases,
   error,
   onBanner,
@@ -803,6 +925,7 @@ function HomeView({
   onPrimary,
 }: {
   data: AppData;
+  memberName: string | null;
   groupedUseCases: Record<string, RitualUseCase[]>;
   error: string | null;
   onBanner: (banner: HomeBanner) => void;
@@ -825,7 +948,7 @@ function HomeView({
       <section className="greeting">
         <div className="hero-layout">
           <div className="hero-message">
-            <span>Trusted ritual booking</span>
+            <span>{memberName ? `Namaste, ${memberName}` : "Trusted ritual booking"}</span>
             <h1>Choose the moment. We handle the ritual.</h1>
             <p>
               Book a verified pandit for life&rsquo;s important moments. We schedule the ritual and
@@ -1064,6 +1187,167 @@ function PhoneView({
         </button>
       </section>
     </div>
+  );
+}
+
+function ProfileNameView({
+  value,
+  busy,
+  error,
+  onChange,
+  onContinue,
+}: {
+  value: string;
+  busy: boolean;
+  error: string | null;
+  onChange: (value: string) => void;
+  onContinue: () => void;
+}) {
+  return (
+    <ProfileFormShell
+      eyebrow="Your ritual profile"
+      title="What is your full name?"
+      text="We will save it to your account and use it for this and future ritual bookings."
+      error={error}
+    >
+      <label htmlFor="profile-full-name">Full name</label>
+      <input
+        id="profile-full-name"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Enter your full name"
+        autoComplete="name"
+        autoFocus
+      />
+      <ProfilePrivacyNote />
+      <button
+        className="primary-button full"
+        onClick={onContinue}
+        disabled={value.trim().length < 2 || busy}
+      >
+        {busy ? <LoaderCircle className="spin" /> : <ArrowRight />}
+        Continue
+      </button>
+    </ProfileFormShell>
+  );
+}
+
+function ProfileBirthDateView({
+  value,
+  busy,
+  error,
+  onChange,
+  onContinue,
+  onSkip,
+}: {
+  value: string;
+  busy: boolean;
+  error: string | null;
+  onChange: (value: string) => void;
+  onContinue: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <ProfileFormShell
+      eyebrow="Optional"
+      title="Your date of birth"
+      text="This helps the pandit prepare the ritual details accurately. Add it once and we will remember it for future bookings."
+      error={error}
+    >
+      <label htmlFor="profile-birth-date">Date of birth <em>Optional</em></label>
+      <input
+        id="profile-birth-date"
+        type="date"
+        value={value}
+        max={todayIso()}
+        onChange={(event) => onChange(event.target.value)}
+        autoComplete="bday"
+      />
+      <ProfilePrivacyNote />
+      <button className="primary-button full" onClick={onContinue} disabled={busy}>
+        {busy ? <LoaderCircle className="spin" /> : <ArrowRight />}
+        Save and continue
+      </button>
+      <button className="text-button profile-skip" onClick={onSkip} disabled={busy}>
+        Skip for now
+      </button>
+    </ProfileFormShell>
+  );
+}
+
+function ProfileBirthPlaceView({
+  value,
+  busy,
+  error,
+  onChange,
+  onContinue,
+  onSkip,
+}: {
+  value: string;
+  busy: boolean;
+  error: string | null;
+  onChange: (value: string) => void;
+  onContinue: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <ProfileFormShell
+      eyebrow="Optional"
+      title="Your place of birth"
+      text="This may be useful for rituals that need birth details. Save it once so you do not have to enter it every time."
+      error={error}
+    >
+      <label htmlFor="profile-birth-place">Place of birth <em>Optional</em></label>
+      <input
+        id="profile-birth-place"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="City, State or Country"
+        autoComplete="off"
+      />
+      <ProfilePrivacyNote />
+      <button className="primary-button full" onClick={onContinue} disabled={busy}>
+        {busy ? <LoaderCircle className="spin" /> : <Check />}
+        Save profile
+      </button>
+      <button className="text-button profile-skip" onClick={onSkip} disabled={busy}>
+        Skip for now
+      </button>
+    </ProfileFormShell>
+  );
+}
+
+function ProfileFormShell({
+  eyebrow,
+  title,
+  text,
+  error,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  text: string;
+  error: string | null;
+  children: ReactNode;
+}) {
+  return (
+    <div className="form-screen profile-form-screen">
+      <section className="form-card">
+        <span>{eyebrow}</span>
+        <h1>{title}</h1>
+        <p>{text}</p>
+        {children}
+        {error && <InlineError message={error} />}
+      </section>
+    </div>
+  );
+}
+
+function ProfilePrivacyNote() {
+  return (
+    <p className="profile-privacy-note">
+      <ShieldCheck /> Saved securely to your Sankalp account. You can update it later.
+    </p>
   );
 }
 
@@ -1402,6 +1686,7 @@ function AccountView({
   busy,
   error,
   onBookings,
+  onEditProfile,
   onSignOut,
 }: {
   profile: MemberProfile | null;
@@ -1409,6 +1694,7 @@ function AccountView({
   busy: boolean;
   error: string | null;
   onBookings: () => void;
+  onEditProfile: () => void;
   onSignOut: () => void;
 }) {
   return (
@@ -1421,6 +1707,23 @@ function AccountView({
           <p>{maskPhone(profile?.phone)}</p>
           <small>Phone verified</small>
         </div>
+      </section>
+      <section className="profile-summary" aria-label="Ritual profile">
+        <div>
+          <span>Full name</span>
+          <strong>{profile?.name || "Not added"}</strong>
+        </div>
+        <div>
+          <span>Date of birth</span>
+          <strong>{formatProfileBirthDate(profile?.date_of_birth)}</strong>
+        </div>
+        <div>
+          <span>Place of birth</span>
+          <strong>{profile?.place_of_birth || "Not added"}</strong>
+        </div>
+        <button className="text-button" onClick={onEditProfile}>
+          <Pencil /> Edit ritual profile
+        </button>
       </section>
       <button className="account-row" onClick={onBookings}>
         <ListChecks />
@@ -1482,6 +1785,15 @@ function maskPhone(phone: string | null | undefined) {
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 4) return phone;
   return `••••••${digits.slice(-4)}`;
+}
+
+function formatProfileBirthDate(value: string | null | undefined) {
+  if (!value) return "Not added";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
 }
 
 function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {

@@ -1,5 +1,5 @@
 import { test as base, expect, type Page } from "@playwright/test";
-import type { Booking } from "../../../src/types";
+import type { Booking, MemberProfile } from "../../../src/types";
 import { SankalpPage } from "../pages/sankalp.page";
 
 export const userId = "22222222-2222-4222-8222-222222222222";
@@ -8,11 +8,22 @@ export const bookingId = "33333333-3333-4333-8333-333333333333";
 const accessToken =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoyMDAwMDAwMDAwLCJzdWIiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJwaG9uZSI6Iis5MTkwMDAwMDA3MDciLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.test-signature";
 
-export const profile = {
+export const profile: MemberProfile = {
   user_id: userId,
   lead_id: "22222222-2222-4222-8222-222222222223",
   phone: "+919000000707",
   name: "Policy Test",
+  date_of_birth: "1990-01-15",
+  place_of_birth: "Mumbai",
+  profile_completed_at: "2026-07-06T07:00:00Z",
+};
+
+export const incompleteProfile: MemberProfile = {
+  ...profile,
+  name: null,
+  date_of_birth: null,
+  place_of_birth: null,
+  profile_completed_at: null,
 };
 
 export const booking: Booking = {
@@ -59,6 +70,7 @@ export const pendingPaymentBooking: Booking = {
 
 export class SankalpMockApi {
   private storedBookings: Booking[] = [];
+  private storedProfile: MemberProfile = { ...profile };
   private listFailure = false;
   private otpFailure = false;
 
@@ -66,6 +78,10 @@ export class SankalpMockApi {
 
   seedBookings(bookings: Booking[]) {
     this.storedBookings = bookings.map((item) => ({ ...item }));
+  }
+
+  seedProfile(nextProfile: MemberProfile) {
+    this.storedProfile = { ...nextProfile };
   }
 
   failBookingList() {
@@ -103,7 +119,7 @@ export class SankalpMockApi {
             role: "authenticated",
             phone: profile.phone,
             phone_confirmed_at: now,
-            user_metadata: { full_name: profile.name },
+            user_metadata: { full_name: this.storedProfile.name },
             app_metadata: { provider: "phone", providers: ["phone"] },
             identities: [],
             created_at: now,
@@ -121,8 +137,26 @@ export class SankalpMockApi {
       const rpcName = new URL(route.request().url()).pathname.split("/").at(-1) ?? "";
       let body: unknown;
 
-      if (rpcName === "get_my_mweb_profile") body = [profile];
-      else if (rpcName === "upsert_mweb_authenticated_lead") body = [profile];
+      if (rpcName === "get_my_mweb_profile") body = [this.storedProfile];
+      else if (rpcName === "upsert_mweb_authenticated_lead") body = [this.storedProfile];
+      else if (rpcName === "update_my_mweb_profile") {
+        const input = route.request().postDataJSON() as {
+          p_name: string;
+          p_date_of_birth: string | null;
+          p_place_of_birth: string | null;
+          p_complete: boolean;
+        };
+        this.storedProfile = {
+          ...this.storedProfile,
+          name: input.p_name,
+          date_of_birth: input.p_date_of_birth,
+          place_of_birth: input.p_place_of_birth,
+          profile_completed_at: input.p_complete
+            ? (this.storedProfile.profile_completed_at ?? "2026-07-06T09:00:00Z")
+            : this.storedProfile.profile_completed_at,
+        };
+        body = [this.storedProfile];
+      }
       else if (rpcName === "list_my_mweb_bookings") {
         if (this.listFailure) {
           await route.fulfill({ status: 500, json: { message: "Booking service unavailable" } });

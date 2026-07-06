@@ -1014,6 +1014,15 @@ p {
   font-weight: 900;
 }
 
+.form-card label em {
+  margin-left: 6px;
+  color: var(--clay);
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .form-card input {
   width: 100%;
   height: 52px;
@@ -1073,6 +1082,36 @@ p {
 .form-card .field-note {
   margin-top: 7px;
   font-size: 11px;
+}
+
+.profile-form-screen {
+  padding-top: 28px;
+}
+
+.form-card .profile-privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  border-radius: 14px;
+  background: rgba(92, 139, 92, 0.09);
+  color: var(--green);
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.profile-privacy-note svg {
+  width: 16px;
+  min-width: 16px;
+  margin-top: 1px;
+}
+
+.form-card .profile-skip {
+  width: 100%;
+  margin-top: 10px;
+  text-align: center;
 }
 
 .text-button {
@@ -1524,6 +1563,46 @@ p {
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.profile-summary {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 253, 248, 0.9);
+  padding: 18px;
+}
+
+.profile-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.profile-summary span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.profile-summary strong {
+  font-size: 12px;
+  text-align: right;
+}
+
+.profile-summary .text-button {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 0;
+}
+
+.profile-summary .text-button svg {
+  width: 15px;
 }
 
 .account-row {

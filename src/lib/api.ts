@@ -88,6 +88,22 @@ export async function getMyProfile() {
   return (data?.[0] ?? null) as MemberProfile | null;
 }
 
+export async function updateMyProfile(input: {
+  name: string;
+  dateOfBirth: string | null;
+  placeOfBirth: string | null;
+  complete?: boolean;
+}) {
+  const { data, error } = await supabase.rpc("update_my_mweb_profile", {
+    p_name: input.name,
+    p_date_of_birth: input.dateOfBirth,
+    p_place_of_birth: input.placeOfBirth,
+    p_complete: input.complete ?? false,
+  });
+  if (error) throw error;
+  return (data?.[0] ?? null) as MemberProfile | null;
+}
+
 export async function loadMyBookings() {
   const { data, error } = await supabase.rpc("list_my_mweb_bookings");
   if (error) throw error;

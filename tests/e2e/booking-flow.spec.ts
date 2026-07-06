@@ -3,7 +3,9 @@ import {
   bookingId,
   cancelledBooking,
   expect,
+  incompleteProfile,
   pendingPaymentBooking,
+  profile,
   secondActiveBooking,
   test,
 } from "./fixtures/sankalp.fixture";
@@ -11,7 +13,9 @@ import {
 test("guest booking creates a member session and reaches server-backed status", async ({
   page,
   sankalp,
+  mockApi,
 }) => {
+  mockApi.seedProfile(incompleteProfile);
   await test.step("select a ritual without choosing a time", async () => {
     await sankalp.goto();
     await expect(page.getByRole("button", { name: /Sign in/ })).toBeVisible();
@@ -26,8 +30,11 @@ test("guest booking creates a member session and reaches server-backed status", 
     await expect(page.getByLabel("Name")).toHaveCount(0);
   });
 
-  await test.step("verify the phone and create the account", async () => {
+  await test.step("verify the phone and complete the first-time ritual profile", async () => {
     await sankalp.completePhoneLogin();
+    await expect(page).toHaveURL(/\/profile\/name$/);
+    await expect(page.getByRole("button", { name: "Continue", exact: true })).toBeDisabled();
+    await sankalp.completeFirstTimeProfile({ birthPlace: "Mumbai" });
     await expect(page).toHaveURL(/\/checkout\/payment$/);
     await expect(page.getByText("Payment", { exact: true })).toBeVisible();
   });
@@ -84,6 +91,7 @@ test("returning member restores bookings after refresh and skips OTP", async ({
 
   await test.step("start another booking without a second OTP", async () => {
     await page.getByRole("button", { name: "Sankalp home" }).click();
+    await expect(page.getByText("Namaste, Policy Test", { exact: true })).toBeVisible();
     await sankalp.chooseRitual();
     await sankalp.continueBooking();
     await expect(page).toHaveURL(/\/checkout\/payment$/);
@@ -103,6 +111,32 @@ test("member can sign out locally", async ({ page, sankalp, mockApi }) => {
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("button", { name: /Sign in/ })).toBeVisible();
+});
+
+test("saved ritual profile is shown once and can be updated without re-entry", async ({
+  page,
+  sankalp,
+  mockApi,
+}) => {
+  mockApi.seedProfile(profile);
+  await sankalp.goto();
+  await sankalp.startHeaderSignIn();
+  await sankalp.completePhoneLogin();
+  await sankalp.openAccount();
+
+  const ritualProfile = page.getByRole("region", { name: "Ritual profile" });
+  await expect(ritualProfile.getByText("Policy Test", { exact: true })).toBeVisible();
+  await expect(ritualProfile.getByText("15 January 1990", { exact: true })).toBeVisible();
+  await expect(ritualProfile.getByText("Mumbai", { exact: true })).toBeVisible();
+
+  await ritualProfile.getByRole("button", { name: /Edit ritual profile/ }).click();
+  await expect(page.getByLabel("Full name")).toHaveValue("Policy Test");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel(/Date of birth/)).toHaveValue("1990-01-15");
+  await page.getByRole("button", { name: /Save and continue/ }).click();
+  await expect(page.getByLabel(/Place of birth/)).toHaveValue("Mumbai");
+  await page.getByRole("button", { name: /Save profile/ }).click();
+  await expect(page).toHaveURL(/\/account$/);
 });
 
 test("multiple active bookings use My Bookings navigation", async ({
