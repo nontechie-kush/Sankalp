@@ -33,6 +33,7 @@ export const booking: Booking = {
   use_case_title: "New job",
   preferred_date: "2026-07-06",
   preferred_time: "18:00:00",
+  booked_before_cutoff: true,
   promised_service_date: "2026-07-06",
   promised_by: "2026-07-06T18:29:59Z",
   amount_minor: 25100,
@@ -66,6 +67,16 @@ export const pendingPaymentBooking: Booking = {
   booking_number: "SKPAY",
   status: "pending_payment",
   payment_status: "pending",
+};
+
+export const afterCutoffBooking: Booking = {
+  ...booking,
+  booking_id: "88888888-8888-4888-8888-888888888888",
+  booking_number: "SKAFTER2",
+  booked_before_cutoff: false,
+  promised_service_date: "2026-07-07",
+  promised_by: "2026-07-07T18:29:59Z",
+  created_at: "2026-07-06T09:11:00Z",
 };
 
 export class SankalpMockApi {

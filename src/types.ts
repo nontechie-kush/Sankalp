@@ -95,6 +95,7 @@ export interface Booking {
   use_case_title: string | null;
   preferred_date: string;
   preferred_time: string;
+  booked_before_cutoff: boolean;
   promised_service_date: string | null;
   promised_by: string | null;
   amount_minor: number;

@@ -3,6 +3,7 @@ import {
   formatDate,
   formatMoney,
   formatTime,
+  getBookingFulfilmentExpectation,
   getFulfilmentExpectation,
   readableStatus,
   todayIso,
@@ -38,5 +39,14 @@ describe("format helpers", () => {
     expect(expectation.isSameDay).toBe(false);
     expect(expectation.title).toBe("Performed by tomorrow");
     expect(expectation.dateLabel).toContain("6 Jul");
+  });
+
+  it("uses the server cutoff decision in an existing booking explanation", () => {
+    expect(getBookingFulfilmentExpectation(todayIso(), false).detail).toContain(
+      "at or after 2 PM",
+    );
+    expect(getBookingFulfilmentExpectation(todayIso(), true).detail).toContain(
+      "before 2 PM",
+    );
   });
 });

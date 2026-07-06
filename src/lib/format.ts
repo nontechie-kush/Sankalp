@@ -99,6 +99,7 @@ export function getFulfilmentExpectation(now = new Date()): FulfilmentExpectatio
 
 export function getBookingFulfilmentExpectation(
   serviceDateIso: string | null | undefined,
+  bookedBeforeCutoff: boolean,
 ): FulfilmentExpectation {
   if (!serviceDateIso) return getFulfilmentExpectation();
 
@@ -118,8 +119,8 @@ export function getBookingFulfilmentExpectation(
         : "Scheduled performance",
     dateLabel: isSameDay ? `Today, ${formattedDate}` : `By ${formattedDate}`,
     serviceDateIso,
-    detail: isSameDay
+    detail: bookedBeforeCutoff
       ? "Booked before 2 PM. If today is an inauspicious day, the ritual will be performed by tomorrow."
-      : "Your ritual will be performed by the end of the promised date shown here.",
+      : "Booked at or after 2 PM. The ritual will be performed by the end of the next day.",
   };
 }

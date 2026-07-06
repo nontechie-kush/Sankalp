@@ -165,9 +165,9 @@ export default function App() {
   }, [draft]);
 
   useEffect(() => {
-    if (location.pathname !== "/auth/otp") return;
     setClockNow(Date.now());
-    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    const interval = location.pathname === "/auth/otp" ? 1000 : 30_000;
+    const timer = window.setInterval(() => setClockNow(Date.now()), interval);
     return () => window.clearInterval(timer);
   }, [location.pathname]);
 
@@ -271,13 +271,9 @@ export default function App() {
         : null,
     [data.rituals, selectedUseCase],
   );
-  const bookingStartedAt = useMemo(
-    () => (draft?.startedAt ? new Date(draft.startedAt) : new Date()),
-    [draft?.startedAt],
-  );
   const fulfilment = useMemo(
-    () => getFulfilmentExpectation(bookingStartedAt),
-    [bookingStartedAt],
+    () => getFulfilmentExpectation(new Date(clockNow)),
+    [clockNow],
   );
   const selectedSlot = useMemo(
     () =>
@@ -618,7 +614,10 @@ export default function App() {
     ) : currentBooking ? (
       <ConfirmationView
         booking={currentBooking}
-        fulfilment={getBookingFulfilmentExpectation(currentBooking.promised_service_date)}
+        fulfilment={getBookingFulfilmentExpectation(
+          currentBooking.promised_service_date,
+          currentBooking.booked_before_cutoff,
+        )}
         onStatus={() => go(`/bookings/${currentBooking.booking_id}`)}
         onHome={() => go("/")}
       />
@@ -649,7 +648,10 @@ export default function App() {
     ) : currentBooking ? (
       <StatusView
         booking={currentBooking}
-        fulfilment={getBookingFulfilmentExpectation(currentBooking.promised_service_date)}
+        fulfilment={getBookingFulfilmentExpectation(
+          currentBooking.promised_service_date,
+          currentBooking.booked_before_cutoff,
+        )}
         onHome={() => go("/bookings")}
         onRefresh={() => void refreshCurrentBooking()}
       />

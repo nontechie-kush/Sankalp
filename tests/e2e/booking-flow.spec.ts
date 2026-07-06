@@ -1,4 +1,5 @@
 import {
+  afterCutoffBooking,
   booking,
   bookingId,
   cancelledBooking,
@@ -206,6 +207,21 @@ test("cancelled booking renders cancellation state without active timeline", asy
 
   await expect(page.getByRole("heading", { name: "Booking cancelled" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Booking progress" })).toHaveCount(0);
+});
+
+test("after-cutoff booking shows the next-day explanation", async ({
+  page,
+  sankalp,
+  mockApi,
+}) => {
+  mockApi.seedBookings([afterCutoffBooking]);
+  await sankalp.goto();
+  await sankalp.startHeaderSignIn();
+  await sankalp.completePhoneLogin();
+  await sankalp.openBooking("SKAFTER2");
+
+  await expect(page.getByText(/Booked at or after 2 PM/)).toBeVisible();
+  await expect(page.getByText(/performed by the end of the next day/)).toBeVisible();
 });
 
 test("pending payment can be resumed idempotently", async ({ page, sankalp, mockApi }) => {
