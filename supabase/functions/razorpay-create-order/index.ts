@@ -17,6 +17,56 @@ interface PaymentContext {
   razorpay_order_id: string | null;
 }
 
+async function reconcileCompletedOrder(
+  booking: PaymentContext,
+  orderId: string,
+  clients: NonNullable<Awaited<ReturnType<typeof authenticatedPaymentClients>>>,
+) {
+  const paymentsResponse = await razorpayRequest(
+    `/orders/${encodeURIComponent(orderId)}/payments`,
+    clients.environment,
+  );
+  const payments = await paymentsResponse.json().catch(() => null) as {
+    items?: Array<{
+      id?: string;
+      order_id?: string;
+      amount?: number;
+      currency?: string;
+      status?: string;
+    }>;
+  } | null;
+  if (!paymentsResponse.ok || !payments?.items) return false;
+
+  let payment = payments.items.find((candidate) =>
+    candidate.order_id === orderId &&
+    candidate.amount === booking.amount_minor &&
+    candidate.currency === booking.currency &&
+    (candidate.status === "authorized" || candidate.status === "captured")
+  );
+  if (!payment?.id) return false;
+
+  if (payment.status === "authorized") {
+    const captureResponse = await razorpayRequest(
+      `/payments/${encodeURIComponent(payment.id)}/capture`,
+      clients.environment,
+      {
+        method: "POST",
+        body: JSON.stringify({ amount: booking.amount_minor, currency: booking.currency }),
+      },
+    );
+    payment = await captureResponse.json().catch(() => null) as typeof payment;
+    if (!captureResponse.ok || payment?.status !== "captured") return false;
+  }
+
+  const completion = await clients.serviceClient.rpc("complete_mweb_razorpay_payment", {
+    p_booking_id: booking.booking_id,
+    p_user_id: clients.user.id,
+    p_razorpay_order_id: orderId,
+    p_razorpay_payment_id: payment.id,
+  });
+  return !completion.error && Boolean(completion.data?.[0]);
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(request) });
   if (request.method !== "POST") return json(request, { error: "Method not allowed." }, 405);
@@ -42,8 +92,45 @@ Deno.serve(async (request) => {
   }
 
   let orderId = booking.razorpay_order_id;
-  if (!orderId) {
-    const receipt = `sk_${booking.booking_id.replaceAll("-", "").slice(0, 32)}`;
+  let reusableOrder = false;
+
+  if (orderId) {
+    const existingResponse = await razorpayRequest(
+      `/orders/${encodeURIComponent(orderId)}`,
+      clients.environment,
+    );
+    const existingOrder = await existingResponse.json().catch(() => null) as {
+      id?: string;
+      amount?: number;
+      currency?: string;
+      status?: string;
+    } | null;
+    const matchesBooking = existingResponse.ok &&
+      existingOrder?.id === orderId &&
+      existingOrder.amount === booking.amount_minor &&
+      existingOrder.currency === booking.currency;
+    reusableOrder = matchesBooking && existingOrder.status === "created";
+
+    if (
+      matchesBooking &&
+      (existingOrder.status === "attempted" || existingOrder.status === "paid") &&
+      await reconcileCompletedOrder(booking, orderId, clients)
+    ) {
+      return json(request, {
+        keyId: clients.environment.razorpayKeyId,
+        orderId,
+        amount: booking.amount_minor,
+        currency: booking.currency,
+        bookingNumber: booking.booking_number,
+        description: booking.ritual_title,
+        alreadyPaid: true,
+      });
+    }
+  }
+
+  if (!reusableOrder) {
+    const previousOrderId = orderId;
+    const receipt = `sk_${booking.booking_id.replaceAll("-", "").slice(0, 22)}_${Date.now().toString(36)}`;
     const razorpayResponse = await razorpayRequest("/orders", clients.environment, {
       method: "POST",
       body: JSON.stringify({
@@ -66,9 +153,10 @@ Deno.serve(async (request) => {
       return json(request, { error: "Razorpay could not start the payment." }, 502);
     }
 
-    const attachment = await clients.serviceClient.rpc("attach_mweb_razorpay_order", {
+    const attachment = await clients.serviceClient.rpc("replace_mweb_razorpay_order", {
       p_booking_id: booking.booking_id,
       p_user_id: clients.user.id,
+      p_expected_order_id: previousOrderId,
       p_razorpay_order_id: razorpayOrder.id,
     });
     if (attachment.error || typeof attachment.data !== "string") {

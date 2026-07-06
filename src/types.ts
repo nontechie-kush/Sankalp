@@ -92,6 +92,7 @@ export interface RazorpayOrder {
   currency: string;
   bookingNumber: string;
   description: string;
+  alreadyPaid?: boolean;
 }
 
 export interface RazorpayCheckoutResult {

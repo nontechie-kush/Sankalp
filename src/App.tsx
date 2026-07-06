@@ -427,8 +427,10 @@ export default function App() {
 
   async function completeRazorpayPayment(bookingId: string) {
     const order = await createRazorpayOrder(bookingId);
-    const checkoutResult = await openRazorpayCheckout(order, auth.profile);
-    await verifyRazorpayPayment(bookingId, checkoutResult);
+    if (!order.alreadyPaid) {
+      const checkoutResult = await openRazorpayCheckout(order, auth.profile);
+      await verifyRazorpayPayment(bookingId, checkoutResult);
+    }
     const paidBooking = await getMyBooking(bookingId);
     if (!paidBooking || paidBooking.payment_status !== "paid") {
       throw new Error("Payment was verified but the booking status could not be refreshed.");
