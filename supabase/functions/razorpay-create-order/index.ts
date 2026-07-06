@@ -21,7 +21,7 @@ async function reconcileCompletedOrder(
   booking: PaymentContext,
   orderId: string,
   clients: NonNullable<Awaited<ReturnType<typeof authenticatedPaymentClients>>>,
-) {
+): Promise<{ completed: boolean; diagnostic?: unknown }> {
   const paymentsResponse = await razorpayRequest(
     `/orders/${encodeURIComponent(orderId)}/payments`,
     clients.environment,
@@ -35,7 +35,7 @@ async function reconcileCompletedOrder(
       status?: string;
     }>;
   } | null;
-  if (!paymentsResponse.ok || !payments?.items) return false;
+  if (!paymentsResponse.ok || !payments?.items) return { completed: false };
 
   let payment = payments.items.find((candidate) =>
     candidate.order_id === orderId &&
@@ -43,7 +43,7 @@ async function reconcileCompletedOrder(
     candidate.currency === booking.currency &&
     (candidate.status === "authorized" || candidate.status === "captured")
   );
-  if (!payment?.id) return false;
+  if (!payment?.id) return { completed: false };
 
   if (payment.status === "authorized") {
     const captureResponse = await razorpayRequest(
@@ -55,7 +55,7 @@ async function reconcileCompletedOrder(
       },
     );
     payment = await captureResponse.json().catch(() => null) as typeof payment;
-    if (!captureResponse.ok || payment?.status !== "captured") return false;
+    if (!captureResponse.ok || payment?.status !== "captured") return { completed: false };
   }
 
   const completion = await clients.serviceClient.rpc("complete_mweb_razorpay_payment", {
@@ -64,7 +64,9 @@ async function reconcileCompletedOrder(
     p_razorpay_order_id: orderId,
     p_razorpay_payment_id: payment.id,
   });
-  return !completion.error && Boolean(completion.data?.[0]);
+  return completion.error
+    ? { completed: false, diagnostic: completion.error }
+    : { completed: Boolean(completion.data?.[0]) };
 }
 
 Deno.serve(async (request) => {
@@ -111,11 +113,15 @@ Deno.serve(async (request) => {
       existingOrder.currency === booking.currency;
     reusableOrder = matchesBooking && existingOrder.status === "created";
 
-    if (
-      matchesBooking &&
-      (existingOrder.status === "attempted" || existingOrder.status === "paid") &&
-      await reconcileCompletedOrder(booking, orderId, clients)
-    ) {
+    const reconciliation = matchesBooking &&
+        (existingOrder.status === "attempted" || existingOrder.status === "paid")
+      ? await reconcileCompletedOrder(booking, orderId, clients)
+      : { completed: false };
+    if (reconciliation.diagnostic) {
+      console.error("Payment reconciliation failed", reconciliation.diagnostic);
+      return json(request, { error: "The verified payment could not be applied to the booking." }, 500);
+    }
+    if (reconciliation.completed) {
       return json(request, {
         keyId: clients.environment.razorpayKeyId,
         orderId,

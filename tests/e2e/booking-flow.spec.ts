@@ -49,6 +49,7 @@ test("guest booking creates a member session and reaches server-backed status", 
     await page.getByRole("button", { name: /Track status/ }).click();
     await expect(page).toHaveURL(new RegExp(`/bookings/${bookingId}$`));
     await expect(page.getByText("Finding your pandit", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Payment confirmed", { exact: true })).toBeVisible();
   });
 });
 
@@ -239,5 +240,6 @@ test("pending payment can be resumed idempotently", async ({ page, sankalp, mock
 
   await expect(page).toHaveURL(new RegExp(`/bookings/${pendingPaymentBooking.booking_id}$`));
   await expect(page.getByText(/Current status: Finding your pandit/)).toBeVisible();
+  await expect(page.getByText("Payment confirmed", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Resume payment" })).toHaveCount(0);
 });

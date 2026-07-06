@@ -1738,7 +1738,11 @@ function StatusView({
           {stages.map((stage, index) => (
             <div className={currentStage >= 0 && index <= currentStage ? "done" : ""} key={stage}>
               <i>{currentStage >= 0 && index <= currentStage ? <Check /> : index + 1}</i>
-              <span>{readableStatus(stage)}</span>
+              <span>
+                {stage === "pending_payment" && booking.payment_status === "paid"
+                  ? "Payment confirmed"
+                  : readableStatus(stage)}
+              </span>
             </div>
           ))}
         </section>
