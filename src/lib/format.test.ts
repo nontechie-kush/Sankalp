@@ -19,7 +19,7 @@ describe("format helpers", () => {
 
   it("formats times and statuses for display", () => {
     expect(formatTime("11:54:00")).toMatch(/11:54/);
-    expect(readableStatus("pending_assignment")).toBe("pending assignment");
+    expect(readableStatus("pending_assignment")).toBe("Finding your pandit");
   });
 
   it("creates a local ISO date", () => {

@@ -4,6 +4,7 @@ import type {
   AppData,
   Booking,
   CreatedBooking,
+  MemberProfile,
   VerifiedLead,
 } from "../types";
 
@@ -82,38 +83,54 @@ export async function verifyOtp(phone: string, code: string, leadName: string) {
   return (data?.[0] ?? null) as VerifiedLead | null;
 }
 
-export async function createAndPayBooking(input: {
-  leadId: string;
+export async function getMyProfile() {
+  const { data, error } = await supabase.rpc("get_my_mweb_profile");
+  if (error) throw error;
+  return (data?.[0] ?? null) as MemberProfile | null;
+}
+
+export async function loadMyBookings() {
+  const { data, error } = await supabase.rpc("list_my_mweb_bookings");
+  if (error) throw error;
+  return (data ?? []) as Booking[];
+}
+
+export async function getMyBooking(bookingId: string) {
+  const { data, error } = await supabase.rpc("get_my_mweb_booking", {
+    p_booking_id: bookingId,
+  });
+  if (error) throw error;
+  return (data?.[0] ?? null) as Booking | null;
+}
+
+export async function createMyBooking(input: {
   ritualId: string;
   useCaseId: string | null;
   slotId: string | null;
   customerName: string;
   intentNote: string | null;
+  clientRequestId: string;
 }) {
-  const { data, error } = await supabase.rpc("create_authenticated_mweb_booking", {
-    p_lead_id: input.leadId,
+  const { data, error } = await supabase.rpc("create_my_mweb_booking", {
     p_ritual_id: input.ritualId,
     p_use_case_id: input.useCaseId,
     p_slot_id: input.slotId,
     p_customer_name: input.customerName || "Sankalp customer",
     p_intent_note: input.intentNote,
+    p_client_request_id: input.clientRequestId,
   });
   if (error) throw error;
 
   const created = (data?.[0] ?? null) as CreatedBooking | null;
   if (!created) throw new Error("The booking could not be created.");
+  return created;
+}
 
-  const payment = await supabase.rpc("mock_pay_authenticated_mweb_booking", {
-    p_lead_id: input.leadId,
-    p_booking_id: created.booking_id,
+export async function payMyBooking(bookingId: string, idempotencyKey: string) {
+  const { data, error } = await supabase.rpc("pay_my_mweb_booking", {
+    p_booking_id: bookingId,
+    p_idempotency_key: idempotencyKey,
   });
-  if (payment.error) throw payment.error;
-
-  const booking = await supabase.rpc("get_authenticated_mweb_booking", {
-    p_lead_id: input.leadId,
-    p_booking_id: created.booking_id,
-  });
-  if (booking.error) throw booking.error;
-
-  return (booking.data?.[0] ?? null) as Booking | null;
+  if (error) throw error;
+  return data?.[0] ?? null;
 }

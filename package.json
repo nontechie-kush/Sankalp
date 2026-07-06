@@ -16,7 +16,8 @@
     "lucide-react": "1.23.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "react-phone-number-input": "3.4.17"
+    "react-phone-number-input": "3.4.17",
+    "react-router-dom": "7.18.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

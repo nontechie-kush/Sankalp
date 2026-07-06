@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,25 +11,50 @@ import {
   Check,
   Clock3,
   CreditCard,
+  CalendarDays,
   DoorOpen,
   EyeOff,
   Flame,
   Heart,
   House,
   LoaderCircle,
+  ListChecks,
+  LogIn,
+  LogOut,
   MapPin,
   MessageCircle,
   Pencil,
+  RefreshCw,
   ShieldCheck,
   Smartphone,
   Sparkles,
   TrendingDown,
+  UserRound,
   Video,
   type LucideIcon,
 } from "lucide-react";
-import { createAndPayBooking, loadAppData, requestOtp, verifyOtp } from "./lib/api";
+import { useAuth } from "./auth";
 import {
+  createMyBooking,
+  getMyBooking,
+  loadAppData,
+  loadMyBookings,
+  payMyBooking,
+  requestOtp,
+  verifyOtp,
+} from "./lib/api";
+import {
+  clearBookingDraft,
+  consumeAuthReturnTo,
+  createBookingDraft,
+  loadBookingDraft,
+  saveAuthReturnTo,
+  saveBookingDraft,
+} from "./lib/draft";
+import {
+  formatDate,
   formatMoney,
+  getBookingFulfilmentExpectation,
   getFulfilmentExpectation,
   readableStatus,
   type FulfilmentExpectation,
@@ -36,11 +62,12 @@ import {
 import type {
   AppData,
   Booking,
+  BookingDraft,
   HomeBanner,
+  MemberProfile,
   Ritual,
   RitualUseCase,
   Screen,
-  VerifiedLead,
 } from "./types";
 
 const emptyData: AppData = {
@@ -72,71 +99,178 @@ function iconFor(name: string) {
   return icons[name] ?? Sparkles;
 }
 
+const activeStatuses = new Set([
+  "pending_payment",
+  "pending_assignment",
+  "pandit_assigned",
+  "ritual_scheduled",
+]);
+
+function isActiveBooking(booking: Booking) {
+  return activeStatuses.has(booking.status);
+}
+
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("home");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const auth = useAuth();
   const [data, setData] = useState<AppData>(emptyData);
-  const [loading, setLoading] = useState(true);
+  const [catalogueLoading, setCatalogueLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUseCaseId, setSelectedUseCaseId] = useState<string | null>(null);
-  const [bookingStartedAt, setBookingStartedAt] = useState(() => new Date());
+  const [draft, setDraft] = useState<BookingDraft | null>(() => loadBookingDraft());
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [clockNow, setClockNow] = useState(() => Date.now());
-  const [lead, setLead] = useState<VerifiedLead | null>(null);
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsError, setBookingsError] = useState<string | null>(null);
+  const [currentBooking, setCurrentBooking] = useState<Booking | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const signingOutRef = useRef(false);
 
   useEffect(() => {
     let active = true;
-
     loadAppData()
       .then((nextData) => {
-        if (!active) return;
-        setData(nextData);
-        setSelectedUseCaseId(nextData.useCases[0]?.id ?? null);
+        if (active) setData(nextData);
       })
       .catch((reason: unknown) => {
-        if (!active) return;
-        setError(reason instanceof Error ? reason.message : "Could not load Sankalp");
+        if (active) setError(errorMessage(reason) || "Could not load Sankalp");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) setCatalogueLoading(false);
       });
-
     return () => {
       active = false;
     };
   }, []);
 
   useEffect(() => {
-    if (screen !== "otp") return;
+    if (auth.profile?.name && !name) setName(auth.profile.name);
+  }, [auth.profile?.name, name]);
+
+  useEffect(() => {
+    if (!draft) return;
+    saveBookingDraft(draft);
+  }, [draft]);
+
+  useEffect(() => {
+    if (location.pathname !== "/auth/otp") return;
     setClockNow(Date.now());
     const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [screen]);
+  }, [location.pathname]);
 
+  useEffect(() => {
+    if (location.pathname !== "/auth/otp" || phone || auth.status === "initializing") return;
+    const target =
+      auth.status === "authenticated"
+        ? consumeAuthReturnTo(draft ? "/checkout/payment" : "/bookings")
+        : "/auth/phone";
+    navigate(target, { replace: true });
+  }, [auth.status, draft, location.pathname, navigate, phone]);
+
+  const refreshBookings = useCallback(async () => {
+    if (auth.status !== "authenticated") return [];
+    setBookingsLoading(true);
+    setBookingsError(null);
+    try {
+      const nextBookings = await loadMyBookings();
+      setBookings(nextBookings);
+      return nextBookings;
+    } catch (reason) {
+      setBookingsError(errorMessage(reason) || "Could not load your bookings.");
+      return [];
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, [auth.status]);
+
+  useEffect(() => {
+    if (auth.status === "authenticated") {
+      void refreshBookings();
+    } else if (auth.status === "guest") {
+      setBookings([]);
+      setCurrentBooking(null);
+    }
+  }, [auth.status, refreshBookings]);
+
+  const bookingPathMatch = location.pathname.match(
+    /^\/(?:bookings|booking-confirmed)\/([0-9a-f-]+)$/i,
+  );
+  const routeBookingId = bookingPathMatch?.[1] ?? null;
+
+  const refreshCurrentBooking = useCallback(async () => {
+    if (!routeBookingId || auth.status !== "authenticated") return null;
+    setBookingLoading(true);
+    try {
+      const booking = await getMyBooking(routeBookingId);
+      setCurrentBooking(booking);
+      if (!booking) setBookingsError("This booking was not found in your account.");
+      return booking;
+    } catch (reason) {
+      setBookingsError(errorMessage(reason) || "Could not refresh this booking.");
+      return null;
+    } finally {
+      setBookingLoading(false);
+    }
+  }, [auth.status, routeBookingId]);
+
+  useEffect(() => {
+    if (routeBookingId && auth.status === "authenticated") void refreshCurrentBooking();
+  }, [auth.status, refreshCurrentBooking, routeBookingId]);
+
+  useEffect(() => {
+    if (!routeBookingId || !currentBooking || !isActiveBooking(currentBooking)) return;
+    const refresh = () => void refreshCurrentBooking();
+    const timer = window.setInterval(refresh, 30_000);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [currentBooking, refreshCurrentBooking, routeBookingId]);
+
+  const protectedRoute =
+    location.pathname === "/account" ||
+    location.pathname === "/bookings" ||
+    location.pathname.startsWith("/bookings/") ||
+    location.pathname.startsWith("/booking-confirmed/") ||
+    location.pathname === "/checkout/payment";
+
+  useEffect(() => {
+    if (!protectedRoute || auth.status !== "guest" || busy || signingOutRef.current) return;
+    saveAuthReturnTo(location.pathname);
+    navigate("/auth/phone", { replace: true });
+  }, [auth.status, busy, location.pathname, navigate, protectedRoute]);
+
+  const ritualPathMatch = location.pathname.match(/^\/ritual\/([^/]+)$/);
+  const routedUseCaseId = ritualPathMatch ? decodeURIComponent(ritualPathMatch[1]) : null;
+  const selectedUseCaseId = routedUseCaseId ?? draft?.useCaseId ?? null;
   const selectedUseCase = useMemo(
-    () => data.useCases.find((item) => item.id === selectedUseCaseId) ?? data.useCases[0] ?? null,
+    () => data.useCases.find((item) => item.id === selectedUseCaseId) ?? null,
     [data.useCases, selectedUseCaseId],
   );
-
   const selectedRitual = useMemo(
     () =>
       selectedUseCase
-        ? (data.rituals.find((item) => item.id === selectedUseCase.ritual_id) ??
-          data.rituals[0] ??
-          null)
-        : (data.rituals[0] ?? null),
+        ? (data.rituals.find((item) => item.id === selectedUseCase.ritual_id) ?? null)
+        : null,
     [data.rituals, selectedUseCase],
   );
-
+  const bookingStartedAt = useMemo(
+    () => (draft?.startedAt ? new Date(draft.startedAt) : new Date()),
+    [draft?.startedAt],
+  );
   const fulfilment = useMemo(
     () => getFulfilmentExpectation(bookingStartedAt),
     [bookingStartedAt],
   );
-
   const selectedSlot = useMemo(
     () =>
       data.slots.find(
@@ -151,7 +285,6 @@ export default function App() {
       null,
     [data.slots, fulfilment.serviceDateIso, selectedRitual?.id],
   );
-
   const groupedUseCases = useMemo(
     () =>
       data.useCases.reduce<Record<string, RitualUseCase[]>>((groups, item) => {
@@ -160,19 +293,20 @@ export default function App() {
       }, {}),
     [data.useCases],
   );
+  const activeBookings = useMemo(() => bookings.filter(isActiveBooking), [bookings]);
 
-  function goTo(nextScreen: Screen) {
+  function go(path: string, replace = false) {
     setError(null);
-    setScreen(nextScreen);
+    navigate(path, { replace });
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }
 
   function selectUseCase(item: RitualUseCase) {
-    setSelectedUseCaseId(item.id);
-    setBookingStartedAt(new Date());
-    setLead(null);
-    setBooking(null);
-    goTo("ritual");
+    const nextDraft = createBookingDraft(item.id);
+    setDraft(nextDraft);
+    saveBookingDraft(nextDraft);
+    setCurrentBooking(null);
+    go(`/ritual/${item.id}`);
   }
 
   function selectBanner(banner: HomeBanner) {
@@ -181,6 +315,24 @@ export default function App() {
       data.useCases.find((item) => item.ritual_id === banner.ritual_id) ??
       data.useCases[0];
     if (useCase) selectUseCase(useCase);
+  }
+
+  function beginAuth(returnTo: string) {
+    saveAuthReturnTo(returnTo);
+    go("/auth/phone");
+  }
+
+  function continueBooking() {
+    if (!draft && selectedUseCase) {
+      const nextDraft = createBookingDraft(selectedUseCase.id);
+      setDraft(nextDraft);
+      saveBookingDraft(nextDraft);
+    }
+    if (auth.status === "authenticated") {
+      go("/checkout/payment");
+    } else {
+      beginAuth("/checkout/payment");
+    }
   }
 
   async function sendOtp() {
@@ -192,7 +344,7 @@ export default function App() {
       setOtp("");
       setResendAvailableAt(Date.now() + 60_000);
       setClockNow(Date.now());
-      setScreen("otp");
+      go("/auth/otp");
     } catch (reason) {
       setError(authErrorMessage(reason, "The OTP could not be sent."));
     } finally {
@@ -206,8 +358,8 @@ export default function App() {
     try {
       const verifiedLead = await verifyOtp(phone, otp, name);
       if (!verifiedLead) throw new Error("The OTP could not be verified.");
-      setLead(verifiedLead);
-      setScreen("payment");
+      await auth.refreshProfile();
+      go(consumeAuthReturnTo(draft ? "/checkout/payment" : "/bookings"), true);
     } catch (reason) {
       setError(authErrorMessage(reason, "The OTP could not be verified."));
     } finally {
@@ -216,21 +368,26 @@ export default function App() {
   }
 
   async function pay() {
-    if (!lead || !selectedRitual || !selectedUseCase) return;
+    if (!draft || !selectedRitual || !selectedUseCase || auth.status !== "authenticated") return;
     setBusy(true);
     setError(null);
     try {
-      const confirmedBooking = await createAndPayBooking({
-        leadId: lead.lead_id,
+      const created = await createMyBooking({
         ritualId: selectedRitual.id,
         useCaseId: selectedUseCase.id,
         slotId: selectedSlot?.id ?? null,
-        customerName: name,
+        customerName: auth.profile?.name || name || "Sankalp customer",
         intentNote: `${selectedUseCase.title}. ${fulfilment.title} (${fulfilment.dateLabel}). ${fulfilment.detail}`,
+        clientRequestId: draft.clientRequestId,
       });
+      await payMyBooking(created.booking_id, draft.paymentIdempotencyKey);
+      const confirmedBooking = await getMyBooking(created.booking_id);
       if (!confirmedBooking) throw new Error("The booking could not be retrieved.");
-      setBooking(confirmedBooking);
-      setScreen("confirm");
+      setCurrentBooking(confirmedBooking);
+      clearBookingDraft();
+      setDraft(null);
+      await refreshBookings();
+      go(`/booking-confirmed/${created.booking_id}`, true);
     } catch (reason) {
       setError(errorMessage(reason) || "The payment could not be completed.");
     } finally {
@@ -238,107 +395,249 @@ export default function App() {
     }
   }
 
-  const phoneIsValid = Boolean(phone && isValidPhoneNumber(phone) && name.trim().length > 1);
+  async function resumePayment(booking: Booking) {
+    setBusy(true);
+    setBookingsError(null);
+    try {
+      await payMyBooking(booking.booking_id, crypto.randomUUID());
+      await refreshBookings();
+      go(`/bookings/${booking.booking_id}`);
+    } catch (reason) {
+      setBookingsError(errorMessage(reason) || "The payment could not be resumed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSignOut() {
+    signingOutRef.current = true;
+    setBusy(true);
+    setError(null);
+    go("/", true);
+    try {
+      await auth.signOut();
+      clearBookingDraft();
+      setDraft(null);
+      setPhone("");
+      setName("");
+      setOtp("");
+      setBookings([]);
+      setCurrentBooking(null);
+    } catch (reason) {
+      signingOutRef.current = false;
+      setError(errorMessage(reason) || "Could not sign out.");
+    } finally {
+      setBusy(false);
+      window.setTimeout(() => {
+        signingOutRef.current = false;
+      }, 0);
+    }
+  }
+
+  const phoneIsValid = Boolean(
+    phone && isValidPhoneNumber(phone) && (!draft || name.trim().length > 1),
+  );
   const otpIsValid = /^\d{6}$/.test(otp);
   const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - clockNow) / 1000));
+  const checkoutScreen: Screen | null = location.pathname.startsWith("/ritual/")
+    ? "ritual"
+    : location.pathname === "/auth/phone" && draft
+      ? "phone"
+      : location.pathname === "/auth/otp" && draft
+        ? "otp"
+        : location.pathname === "/checkout/payment"
+          ? "payment"
+          : location.pathname.startsWith("/booking-confirmed/")
+            ? "confirm"
+            : null;
+
+  function checkoutBackPath(screen: Screen) {
+    if (screen === "phone") return selectedUseCase ? `/ritual/${selectedUseCase.id}` : "/";
+    if (screen === "otp") return "/auth/phone";
+    if (screen === "payment") return selectedUseCase ? `/ritual/${selectedUseCase.id}` : "/";
+    return "/";
+  }
+
+  let content: ReactNode;
+  if (catalogueLoading || auth.status === "initializing") {
+    content = <LoadingState />;
+  } else if (location.pathname === "/") {
+    content = (
+      <HomeView
+        data={data}
+        groupedUseCases={groupedUseCases}
+        error={error}
+        onBanner={selectBanner}
+        onUseCase={selectUseCase}
+        onPrimary={() => data.useCases[0] && selectUseCase(data.useCases[0])}
+      />
+    );
+  } else if (location.pathname.startsWith("/ritual/") && selectedRitual && selectedUseCase) {
+    content = (
+      <RitualView
+        ritual={selectedRitual}
+        selectedUseCase={selectedUseCase}
+        relatedUseCases={data.useCases.filter((item) => item.ritual_id === selectedRitual.id)}
+        fulfilment={fulfilment}
+        onUseCase={selectUseCase}
+        onContinue={continueBooking}
+      />
+    );
+  } else if (location.pathname === "/auth/phone") {
+    content = (
+      <PhoneView
+        phone={phone}
+        name={name}
+        error={error}
+        busy={busy}
+        useCase={selectedUseCase}
+        fulfilment={draft ? fulfilment : undefined}
+        onName={setName}
+        onPhone={setPhone}
+        onContinue={sendOtp}
+        canContinue={phoneIsValid}
+      />
+    );
+  } else if (location.pathname === "/auth/otp" && phone) {
+    content = (
+      <OtpView
+        phone={phone}
+        fulfilment={draft ? fulfilment : undefined}
+        otp={otp}
+        busy={busy}
+        error={error}
+        resendSeconds={resendSeconds}
+        onOtp={(value) => setOtp(value.replace(/\D/g, ""))}
+        onResend={sendOtp}
+        onVerify={confirmOtp}
+        canVerify={otpIsValid}
+      />
+    );
+  } else if (
+    location.pathname === "/checkout/payment" &&
+    selectedRitual &&
+    selectedUseCase &&
+    auth.status === "authenticated"
+  ) {
+    content = (
+      <PaymentView
+        ritual={selectedRitual}
+        useCase={selectedUseCase}
+        fulfilment={fulfilment}
+        busy={busy}
+        error={error}
+        member={auth.profile}
+        onPay={pay}
+      />
+    );
+  } else if (location.pathname.startsWith("/booking-confirmed/") && auth.status === "authenticated") {
+    content = bookingLoading ? (
+      <LoadingState />
+    ) : currentBooking ? (
+      <ConfirmationView
+        booking={currentBooking}
+        fulfilment={getBookingFulfilmentExpectation(currentBooking.promised_service_date)}
+        onStatus={() => go(`/bookings/${currentBooking.booking_id}`)}
+        onHome={() => go("/")}
+      />
+    ) : (
+      <MemberEmptyState
+        title="Booking not found"
+        text={bookingsError || "This booking is not available in your account."}
+        action="Back to My Bookings"
+        onAction={() => go("/bookings")}
+      />
+    );
+  } else if (location.pathname === "/bookings" && auth.status === "authenticated") {
+    content = (
+      <MyBookingsView
+        bookings={bookings}
+        loading={bookingsLoading}
+        error={bookingsError}
+        busy={busy}
+        onOpen={(booking) => go(`/bookings/${booking.booking_id}`)}
+        onResume={resumePayment}
+        onRefresh={() => void refreshBookings()}
+        onExplore={() => go("/")}
+      />
+    );
+  } else if (location.pathname.startsWith("/bookings/") && auth.status === "authenticated") {
+    content = bookingLoading ? (
+      <LoadingState />
+    ) : currentBooking ? (
+      <StatusView
+        booking={currentBooking}
+        fulfilment={getBookingFulfilmentExpectation(currentBooking.promised_service_date)}
+        onHome={() => go("/bookings")}
+        onRefresh={() => void refreshCurrentBooking()}
+      />
+    ) : (
+      <MemberEmptyState
+        title="Booking not found"
+        text={bookingsError || "This booking is not available in your account."}
+        action="Back to My Bookings"
+        onAction={() => go("/bookings")}
+      />
+    );
+  } else if (location.pathname === "/account" && auth.status === "authenticated") {
+    content = (
+      <AccountView
+        profile={auth.profile}
+        bookingCount={bookings.length}
+        busy={busy}
+        error={error}
+        onBookings={() => go("/bookings")}
+        onSignOut={handleSignOut}
+      />
+    );
+  } else if (protectedRoute && auth.status !== "authenticated") {
+    content = <LoadingState />;
+  } else if (location.pathname === "/checkout/payment") {
+    content = (
+      <MemberEmptyState
+        title="Your booking draft expired"
+        text="Choose your ritual again and we will restart the booking safely."
+        action="Explore rituals"
+        onAction={() => go("/")}
+      />
+    );
+  } else {
+    content = (
+      <MemberEmptyState
+        title="Page not found"
+        text="The page you requested does not exist."
+        action="Back home"
+        onAction={() => go("/")}
+      />
+    );
+  }
 
   return (
     <main className="page">
       <section className="mweb-shell">
         <SiteHeader
-          onHome={() => goTo("home")}
-          onTrack={() => booking && goTo("status")}
-          canTrack={Boolean(booking)}
+          authStatus={auth.status}
+          profile={auth.profile}
+          activeBookings={activeBookings}
+          onHome={() => go("/")}
+          onSignIn={() => beginAuth("/bookings")}
+          onBookings={() => go("/bookings")}
+          onTrack={() =>
+            activeBookings.length === 1
+              ? go(`/bookings/${activeBookings[0].booking_id}`)
+              : go("/bookings")
+          }
+          onAccount={() => go("/account")}
         />
-
-        {screen !== "home" && (
+        {checkoutScreen && (
           <CheckoutNavigation
-            screen={screen}
-            title={screenTitle(screen)}
-            onBack={() => goTo(previousScreen(screen))}
-            muted={screen === "confirm" || screen === "status"}
+            screen={checkoutScreen}
+            title={screenTitle(checkoutScreen)}
+            onBack={() => go(checkoutBackPath(checkoutScreen))}
+            muted={checkoutScreen === "confirm"}
           />
         )}
-
-        {loading && <LoadingState />}
-
-        {!loading && screen === "home" && (
-          <HomeView
-            data={data}
-            groupedUseCases={groupedUseCases}
-            error={error}
-            onBanner={selectBanner}
-            onUseCase={selectUseCase}
-            onPrimary={() => data.useCases[0] && selectUseCase(data.useCases[0])}
-          />
-        )}
-
-        {!loading && screen === "ritual" && selectedRitual && selectedUseCase && (
-          <RitualView
-            ritual={selectedRitual}
-            selectedUseCase={selectedUseCase}
-            relatedUseCases={data.useCases.filter(
-              (item) => item.ritual_id === selectedRitual.id,
-            )}
-            fulfilment={fulfilment}
-            onUseCase={selectUseCase}
-            onContinue={() => goTo("phone")}
-          />
-        )}
-
-        {!loading && screen === "phone" && selectedUseCase && (
-          <PhoneView
-            phone={phone}
-            name={name}
-            error={error}
-            busy={busy}
-            useCase={selectedUseCase}
-            fulfilment={fulfilment}
-            onName={setName}
-            onPhone={setPhone}
-            onContinue={sendOtp}
-            canContinue={phoneIsValid}
-          />
-        )}
-
-        {!loading && screen === "otp" && phone && (
-          <OtpView
-            phone={phone}
-            fulfilment={fulfilment}
-            otp={otp}
-            busy={busy}
-            error={error}
-            resendSeconds={resendSeconds}
-            onOtp={(value) => setOtp(value.replace(/\D/g, ""))}
-            onResend={sendOtp}
-            onVerify={confirmOtp}
-            canVerify={otpIsValid}
-          />
-        )}
-
-        {!loading && screen === "payment" && selectedRitual && selectedUseCase && (
-          <PaymentView
-            ritual={selectedRitual}
-            useCase={selectedUseCase}
-            fulfilment={fulfilment}
-            busy={busy}
-            error={error}
-            onPay={pay}
-          />
-        )}
-
-        {!loading && screen === "confirm" && booking && (
-          <ConfirmationView
-            booking={booking}
-            fulfilment={fulfilment}
-            onStatus={() => goTo("status")}
-            onHome={() => goTo("home")}
-          />
-        )}
-
-        {!loading && screen === "status" && booking && (
-          <StatusView booking={booking} fulfilment={fulfilment} onHome={() => goTo("home")} />
-        )}
+        {content}
       </section>
     </main>
   );
@@ -389,27 +688,26 @@ function screenTitle(screen: Screen) {
   }[screen];
 }
 
-function previousScreen(screen: Screen): Screen {
-  return {
-    home: "home",
-    ritual: "home",
-    phone: "ritual",
-    otp: "phone",
-    payment: "otp",
-    confirm: "home",
-    status: "confirm",
-  }[screen] as Screen;
-}
-
 function SiteHeader({
+  authStatus,
+  profile,
+  activeBookings,
   onHome,
+  onSignIn,
+  onBookings,
   onTrack,
-  canTrack,
+  onAccount,
 }: {
+  authStatus: "initializing" | "guest" | "authenticated";
+  profile: MemberProfile | null;
+  activeBookings: Booking[];
   onHome: () => void;
+  onSignIn: () => void;
+  onBookings: () => void;
   onTrack: () => void;
-  canTrack: boolean;
+  onAccount: () => void;
 }) {
+  const firstName = profile?.name?.trim().split(/\s+/)[0] || "Account";
   return (
     <header className="site-header">
       <div className="site-header-inner">
@@ -427,9 +725,25 @@ function SiteHeader({
           <span className="location-pill">
             <MapPin /> Mumbai
           </span>
-          {canTrack && (
+          {authStatus === "guest" && (
+            <button className="track-button" onClick={onSignIn}>
+              <LogIn /> Sign in
+            </button>
+          )}
+          {authStatus === "authenticated" && activeBookings.length > 0 && (
             <button className="track-button" onClick={onTrack}>
-              Track booking
+              <ListChecks /> {activeBookings.length === 1 ? "Track booking" : "My bookings"}
+            </button>
+          )}
+          {authStatus === "authenticated" && activeBookings.length === 0 && (
+            <button className="track-button" onClick={onBookings}>
+              <ListChecks /> My bookings
+            </button>
+          )}
+          {authStatus === "authenticated" && (
+            <button className="account-button" onClick={onAccount} aria-label={`${firstName} account`}>
+              <span>{firstName.slice(0, 1).toUpperCase()}</span>
+              <UserRound />
             </button>
           )}
         </div>
@@ -531,7 +845,7 @@ function HomeView({
               <button className="primary-button" onClick={onPrimary} disabled={!data.useCases.length}>
                 Find your ritual <ArrowRight />
               </button>
-              <small>No calls or account setup required</small>
+              <small>No calls. Secure phone verification only.</small>
             </div>
             <div className="hero-assurances" aria-label="Service assurances">
               <span>
@@ -720,8 +1034,8 @@ function PhoneView({
   name: string;
   error: string | null;
   busy: boolean;
-  useCase: RitualUseCase;
-  fulfilment: FulfilmentExpectation;
+  useCase: RitualUseCase | null;
+  fulfilment?: FulfilmentExpectation;
   onName: (value: string) => void;
   onPhone: (value: string) => void;
   onContinue: () => void;
@@ -732,17 +1046,23 @@ function PhoneView({
       <section className="form-card">
         <span>Phone verification</span>
         <h1>Where should we send the OTP?</h1>
-        <p>Booking {useCase.title}. We will schedule the auspicious performance for you.</p>
-        <ServicePromise fulfilment={fulfilment} compact />
-        <label>
-          Name
-          <input
-            value={name}
-            onChange={(event) => onName(event.target.value)}
-            placeholder="Your name"
-            autoComplete="name"
-          />
-        </label>
+        <p>
+          {useCase
+            ? `Booking ${useCase.title}. We will schedule the auspicious performance for you.`
+            : "Sign in to view your bookings and continue securely on any device."}
+        </p>
+        {fulfilment && <ServicePromise fulfilment={fulfilment} compact />}
+        {useCase && (
+          <label>
+            Name
+            <input
+              value={name}
+              onChange={(event) => onName(event.target.value)}
+              placeholder="Your name"
+              autoComplete="name"
+            />
+          </label>
+        )}
         <label htmlFor="mobile-number">Mobile number</label>
         <PhoneInput
           id="mobile-number"
@@ -785,7 +1105,7 @@ function OtpView({
   canVerify,
 }: {
   phone: string;
-  fulfilment: FulfilmentExpectation;
+  fulfilment?: FulfilmentExpectation;
   otp: string;
   busy: boolean;
   error: string | null;
@@ -803,7 +1123,7 @@ function OtpView({
         <p>
           We sent a 6-digit code to <strong>{phone}</strong>. It expires shortly.
         </p>
-        <ServicePromise fulfilment={fulfilment} compact />
+        {fulfilment && <ServicePromise fulfilment={fulfilment} compact />}
         <label>
           OTP
           <input
@@ -843,6 +1163,7 @@ function PaymentView({
   fulfilment,
   busy,
   error,
+  member,
   onPay,
 }: {
   ritual: Ritual;
@@ -850,6 +1171,7 @@ function PaymentView({
   fulfilment: FulfilmentExpectation;
   busy: boolean;
   error: string | null;
+  member: MemberProfile | null;
   onPay: () => void;
 }) {
   return (
@@ -863,6 +1185,7 @@ function PaymentView({
         </section>
         <ServicePromise fulfilment={fulfilment} compact />
         <section className="receipt">
+          <ReceiptRow label="Account" value={member?.name || maskPhone(member?.phone)} />
           <ReceiptRow label="Ritual" value={ritual.title} />
           <ReceiptRow label="Intent" value={useCase.title} />
           <ReceiptRow label="Expected" value={fulfilment.dateLabel} />
@@ -878,7 +1201,7 @@ function PaymentView({
       <BottomBar
         label="Pay now"
         value={formatMoney(useCase.price_minor, useCase.currency)}
-        action={busy ? "Processing" : "Mock pay"}
+        action={busy ? "Processing" : "Confirm booking"}
         onAction={onPay}
         disabled={busy}
       />
@@ -929,10 +1252,12 @@ function StatusView({
   booking,
   fulfilment,
   onHome,
+  onRefresh,
 }: {
   booking: Booking;
   fulfilment: FulfilmentExpectation;
   onHome: () => void;
+  onRefresh: () => void;
 }) {
   const stages = [
     "pending_payment",
@@ -941,7 +1266,8 @@ function StatusView({
     "ritual_scheduled",
     "completed",
   ];
-  const currentStage = Math.max(stages.indexOf(booking.status), 1);
+  const currentStage = stages.indexOf(booking.status);
+  const cancelled = booking.status === "cancelled";
 
   return (
     <div className="scroll-area status-view">
@@ -951,19 +1277,232 @@ function StatusView({
         <p>Current status: {readableStatus(booking.status)}</p>
       </section>
       <ServicePromise fulfilment={fulfilment} compact />
-      <section className="timeline">
-        {stages.map((stage, index) => (
-          <div className={index <= currentStage ? "done" : ""} key={stage}>
-            <i>{index <= currentStage ? <Check /> : index + 1}</i>
-            <span>{readableStatus(stage)}</span>
-          </div>
+      {cancelled ? (
+        <section className="cancelled-card">
+          <strong>Booking cancelled</strong>
+          <p>This booking is no longer scheduled. Contact support if you need assistance.</p>
+        </section>
+      ) : (
+        <section className="timeline">
+          {stages.map((stage, index) => (
+            <div className={currentStage >= 0 && index <= currentStage ? "done" : ""} key={stage}>
+              <i>{currentStage >= 0 && index <= currentStage ? <Check /> : index + 1}</i>
+              <span>{readableStatus(stage)}</span>
+            </div>
+          ))}
+        </section>
+      )}
+      <div className="action-row status-actions">
+        <button className="secondary-button" onClick={onHome}>
+          My Bookings
+        </button>
+        <button className="primary-button" onClick={onRefresh}>
+          Refresh status
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MyBookingsView({
+  bookings,
+  loading,
+  error,
+  busy,
+  onOpen,
+  onResume,
+  onRefresh,
+  onExplore,
+}: {
+  bookings: Booking[];
+  loading: boolean;
+  error: string | null;
+  busy: boolean;
+  onOpen: (booking: Booking) => void;
+  onResume: (booking: Booking) => void;
+  onRefresh: () => void;
+  onExplore: () => void;
+}) {
+  const active = bookings.filter(isActiveBooking);
+  const history = bookings.filter((booking) => !isActiveBooking(booking));
+
+  return (
+    <div className="member-page">
+      <MemberPageHeading
+        eyebrow="Your account"
+        title="My Bookings"
+        action="Refresh"
+        onAction={onRefresh}
+      />
+      {error && <InlineError message={error} />}
+      {loading ? (
+        <LoadingState />
+      ) : bookings.length === 0 ? (
+        <MemberEmptyState
+          title="No bookings yet"
+          text="When you book a ritual, its confirmation and live status will appear here on every device."
+          action="Explore rituals"
+          onAction={onExplore}
+        />
+      ) : (
+        <>
+          {active.length > 0 && (
+            <BookingGroup
+              title="Active"
+              bookings={active}
+              busy={busy}
+              onOpen={onOpen}
+              onResume={onResume}
+            />
+          )}
+          {history.length > 0 && (
+            <BookingGroup
+              title="History"
+              bookings={history}
+              busy={busy}
+              onOpen={onOpen}
+              onResume={onResume}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function BookingGroup({
+  title,
+  bookings,
+  busy,
+  onOpen,
+  onResume,
+}: {
+  title: string;
+  bookings: Booking[];
+  busy: boolean;
+  onOpen: (booking: Booking) => void;
+  onResume: (booking: Booking) => void;
+}) {
+  return (
+    <section className="booking-group">
+      <h2>{title}</h2>
+      <div className="booking-list">
+        {bookings.map((booking) => (
+          <article className="booking-list-card" key={booking.booking_id}>
+            <button onClick={() => onOpen(booking)}>
+              <span className="booking-list-icon"><CalendarDays /></span>
+              <span>
+                <small>{booking.booking_number}</small>
+                <strong>{booking.ritual_title}</strong>
+                <em>{readableStatus(booking.status)}</em>
+              </span>
+              <span className="booking-date">
+                {formatDate(booking.promised_service_date || booking.preferred_date)}
+                <ArrowRight />
+              </span>
+            </button>
+            {booking.status === "pending_payment" && (
+              <button
+                className="resume-payment"
+                onClick={() => onResume(booking)}
+                disabled={busy}
+              >
+                Resume payment
+              </button>
+            )}
+          </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function AccountView({
+  profile,
+  bookingCount,
+  busy,
+  error,
+  onBookings,
+  onSignOut,
+}: {
+  profile: MemberProfile | null;
+  bookingCount: number;
+  busy: boolean;
+  error: string | null;
+  onBookings: () => void;
+  onSignOut: () => void;
+}) {
+  return (
+    <div className="member-page account-page">
+      <MemberPageHeading eyebrow="Signed in" title="Your account" />
+      <section className="account-card">
+        <span className="account-avatar">{(profile?.name || "S").slice(0, 1).toUpperCase()}</span>
+        <div>
+          <h2>{profile?.name || "Sankalp member"}</h2>
+          <p>{maskPhone(profile?.phone)}</p>
+          <small>Phone verified</small>
+        </div>
       </section>
-      <button className="primary-button full" onClick={onHome}>
-        Back home
+      <button className="account-row" onClick={onBookings}>
+        <ListChecks />
+        <span><strong>My Bookings</strong><small>{bookingCount} total</small></span>
+        <ArrowRight />
+      </button>
+      {error && <InlineError message={error} />}
+      <button className="secondary-button full sign-out-button" onClick={onSignOut} disabled={busy}>
+        <LogOut /> {busy ? "Signing out" : "Sign out on this device"}
       </button>
     </div>
   );
+}
+
+function MemberPageHeading({
+  eyebrow,
+  title,
+  action,
+  onAction,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <header className="member-page-heading">
+      <div><span>{eyebrow}</span><h1>{title}</h1></div>
+      {action && onAction && (
+        <button onClick={onAction}><RefreshCw /> {action}</button>
+      )}
+    </header>
+  );
+}
+
+function MemberEmptyState({
+  title,
+  text,
+  action,
+  onAction,
+}: {
+  title: string;
+  text: string;
+  action: string;
+  onAction: () => void;
+}) {
+  return (
+    <section className="member-empty-state">
+      <ListChecks />
+      <h1>{title}</h1>
+      <p>{text}</p>
+      <button className="primary-button" onClick={onAction}>{action}</button>
+    </section>
+  );
+}
+
+function maskPhone(phone: string | null | undefined) {
+  if (!phone) return "Verified phone";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 4) return phone;
+  return `••••••${digits.slice(-4)}`;
 }
 
 function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {

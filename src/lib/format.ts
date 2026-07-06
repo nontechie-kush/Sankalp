@@ -33,7 +33,15 @@ export function todayIso(now = new Date()) {
 }
 
 export function readableStatus(status: string) {
-  return status.replaceAll("_", " ");
+  const labels: Record<string, string> = {
+    pending_payment: "Payment pending",
+    pending_assignment: "Finding your pandit",
+    pandit_assigned: "Pandit assigned",
+    ritual_scheduled: "Ritual scheduled",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
+  return labels[status] ?? status.replaceAll("_", " ");
 }
 
 export interface FulfilmentExpectation {
@@ -86,5 +94,32 @@ export function getFulfilmentExpectation(now = new Date()): FulfilmentExpectatio
     dateLabel: `By ${formattedDate}`,
     serviceDateIso,
     detail: "Bookings placed at or after 2 PM are performed by the end of the next day.",
+  };
+}
+
+export function getBookingFulfilmentExpectation(
+  serviceDateIso: string | null | undefined,
+): FulfilmentExpectation {
+  if (!serviceDateIso) return getFulfilmentExpectation();
+
+  const today = getFulfilmentExpectation(new Date()).serviceDateIso;
+  const tomorrowDate = new Date(`${today}T00:00:00Z`);
+  tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+  const tomorrow = tomorrowDate.toISOString().slice(0, 10);
+  const formattedDate = formatDate(serviceDateIso);
+  const isSameDay = serviceDateIso === today;
+
+  return {
+    isSameDay,
+    title: isSameDay
+      ? "Expected today"
+      : serviceDateIso === tomorrow
+        ? "Performed by tomorrow"
+        : "Scheduled performance",
+    dateLabel: isSameDay ? `Today, ${formattedDate}` : `By ${formattedDate}`,
+    serviceDateIso,
+    detail: isSameDay
+      ? "Booked before 2 PM. If today is an inauspicious day, the ritual will be performed by tomorrow."
+      : "Your ritual will be performed by the end of the promised date shown here.",
   };
 }

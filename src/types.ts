@@ -69,19 +69,35 @@ export interface VerifiedLead {
   name: string | null;
 }
 
+export interface MemberProfile extends VerifiedLead {
+  user_id?: string;
+}
+
+export interface BookingDraft {
+  useCaseId: string;
+  startedAt: string;
+  clientRequestId: string;
+  paymentIdempotencyKey: string;
+}
+
 export interface CreatedBooking {
   booking_id: string;
   booking_number: string;
 }
 
 export interface Booking {
-  booking_id?: string;
+  booking_id: string;
   booking_number: string;
   ritual_title: string;
   use_case_title: string | null;
   preferred_date: string;
   preferred_time: string;
+  promised_service_date: string | null;
+  promised_by: string | null;
   amount_minor: number;
   currency: string;
   status: string;
+  payment_status: string;
+  created_at: string;
+  updated_at: string;
 }

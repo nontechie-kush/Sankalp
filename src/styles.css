@@ -140,6 +140,9 @@ summary:focus-visible {
 
 .track-button {
   min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 0 13px;
@@ -147,6 +150,31 @@ summary:focus-visible {
   color: var(--ink);
   font-size: 12px;
   font-weight: 800;
+}
+
+.track-button svg {
+  width: 15px;
+}
+
+.account-button {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(189, 104, 66, 0.25);
+  border-radius: 50%;
+  background: #f8e7dc;
+  color: var(--clay-dark);
+}
+
+.account-button > span {
+  font-weight: 900;
+}
+
+.account-button > svg {
+  display: none;
+  width: 17px;
 }
 
 .checkout-nav {
@@ -1246,6 +1274,292 @@ p {
   width: 15px;
 }
 
+.cancelled-card {
+  margin: 18px 0;
+  border: 1px solid rgba(157, 53, 36, 0.18);
+  border-radius: 20px;
+  background: rgba(157, 53, 36, 0.07);
+  padding: 18px;
+}
+
+.cancelled-card strong {
+  color: #963524;
+}
+
+.cancelled-card p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.status-actions {
+  margin-top: 18px;
+}
+
+.member-page {
+  width: min(100%, 860px);
+  min-height: calc(100vh - 64px);
+  margin: 0 auto;
+  padding: 34px 18px 80px;
+}
+
+.member-page-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.member-page-heading span {
+  color: var(--clay);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.member-page-heading h1 {
+  margin-top: 5px;
+  font-size: 36px;
+}
+
+.member-page-heading button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--muted);
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.member-page-heading button svg {
+  width: 14px;
+}
+
+.booking-group + .booking-group {
+  margin-top: 34px;
+}
+
+.booking-group > h2 {
+  margin-bottom: 12px;
+  color: var(--clay-dark);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.booking-list {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-list-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 253, 248, 0.9);
+}
+
+.booking-list-card > button:first-child {
+  width: 100%;
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 14px;
+  text-align: left;
+}
+
+.booking-list-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #f8e7dc;
+  color: var(--clay);
+}
+
+.booking-list-icon svg {
+  width: 19px;
+}
+
+.booking-list-card small,
+.booking-list-card strong,
+.booking-list-card em {
+  display: block;
+}
+
+.booking-list-card small {
+  color: var(--clay);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.booking-list-card strong {
+  margin-top: 3px;
+  font-size: 14px;
+}
+
+.booking-list-card em {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.booking-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.booking-date svg {
+  width: 15px;
+}
+
+.resume-payment {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  border-top: 1px solid var(--soft-line);
+  background: rgba(189, 104, 66, 0.08);
+  color: var(--clay-dark);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.member-empty-state {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: rgba(255, 253, 248, 0.82);
+  padding: 30px;
+}
+
+.member-empty-state > svg {
+  width: 38px;
+  height: 38px;
+  color: var(--clay);
+}
+
+.member-empty-state h1 {
+  margin-top: 14px;
+  font-size: 30px;
+}
+
+.member-empty-state p {
+  max-width: 36ch;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.member-empty-state .primary-button {
+  margin-top: 20px;
+}
+
+.account-page {
+  width: min(100%, 680px);
+}
+
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 253, 248, 0.9);
+  padding: 20px;
+}
+
+.account-avatar {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--clay), var(--clay-dark));
+  color: #fff;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.account-card h2 {
+  font-size: 22px;
+}
+
+.account-card p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.account-card small {
+  display: block;
+  margin-top: 5px;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.account-row {
+  width: 100%;
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: 30px 1fr 20px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.account-row > svg {
+  width: 20px;
+  color: var(--clay);
+}
+
+.account-row span {
+  display: grid;
+}
+
+.account-row small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.sign-out-button {
+  margin-top: 24px;
+}
+
 .center-state {
   min-height: 50vh;
   display: grid;
@@ -1267,7 +1581,8 @@ p {
 }
 
 @media (max-width: 380px) {
-  .site-actions:has(.track-button) .location-pill {
+  .site-actions:has(.track-button) .location-pill,
+  .site-actions:has(.account-button) .location-pill {
     display: none;
   }
 
@@ -1281,6 +1596,12 @@ p {
 
   .hero-actions .primary-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-actions:has(.account-button) .location-pill {
+    display: none;
   }
 }
 
