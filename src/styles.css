@@ -1282,8 +1282,9 @@ p {
   padding: 18px;
 }
 
-.cancelled-card strong {
+.cancelled-card h2 {
   color: #963524;
+  font-size: 18px;
 }
 
 .cancelled-card p {

@@ -1278,12 +1278,12 @@ function StatusView({
       </section>
       <ServicePromise fulfilment={fulfilment} compact />
       {cancelled ? (
-        <section className="cancelled-card">
-          <strong>Booking cancelled</strong>
+        <section className="cancelled-card" aria-label="Cancellation status">
+          <h2>Booking cancelled</h2>
           <p>This booking is no longer scheduled. Contact support if you need assistance.</p>
         </section>
       ) : (
-        <section className="timeline">
+        <section className="timeline" aria-label="Booking progress">
           {stages.map((stage, index) => (
             <div className={currentStage >= 0 && index <= currentStage ? "done" : ""} key={stage}>
               <i>{currentStage >= 0 && index <= currentStage ? <Check /> : index + 1}</i>
@@ -1384,11 +1384,15 @@ function BookingGroup({
   onResume: (booking: Booking) => void;
 }) {
   return (
-    <section className="booking-group">
+    <section className="booking-group" aria-label={`${title} bookings`}>
       <h2>{title}</h2>
       <div className="booking-list">
         {bookings.map((booking) => (
-          <article className="booking-list-card" key={booking.booking_id}>
+          <article
+            className="booking-list-card"
+            aria-label={`${booking.booking_number} ${booking.ritual_title}`}
+            key={booking.booking_id}
+          >
             <button onClick={() => onOpen(booking)}>
               <span className="booking-list-icon"><CalendarDays /></span>
               <span>

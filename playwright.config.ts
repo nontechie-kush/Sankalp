@@ -3,10 +3,16 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
-  reporter: "line",
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? "50%" : undefined,
+  reporter: process.env.CI ? [["blob"], ["github"]] : "line",
   use: {
     baseURL: "http://127.0.0.1:4173",
-    trace: "on-first-retry",
+    trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: process.env.CI ? "on-first-retry" : "off",
+    navigationTimeout: 30_000,
   },
   projects: [
     {
