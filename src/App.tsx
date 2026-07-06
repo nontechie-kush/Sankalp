@@ -232,7 +232,7 @@ export default function App() {
       setBooking(confirmedBooking);
       setScreen("confirm");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The payment could not be completed.");
+      setError(errorMessage(reason) || "The payment could not be completed.");
     } finally {
       setBusy(false);
     }
@@ -345,7 +345,7 @@ export default function App() {
 }
 
 function authErrorMessage(reason: unknown, fallback: string) {
-  const message = reason instanceof Error ? reason.message : "";
+  const message = errorMessage(reason);
   const normalized = message.toLowerCase();
 
   if (normalized.includes("rate") || normalized.includes("too many")) {
@@ -362,6 +362,19 @@ function authErrorMessage(reason: unknown, fallback: string) {
   }
 
   return message || fallback;
+}
+
+function errorMessage(reason: unknown) {
+  if (reason instanceof Error) return reason.message;
+  if (
+    reason &&
+    typeof reason === "object" &&
+    "message" in reason &&
+    typeof reason.message === "string"
+  ) {
+    return reason.message;
+  }
+  return "";
 }
 
 function screenTitle(screen: Screen) {

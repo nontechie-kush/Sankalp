@@ -26,6 +26,7 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+#variable_conflict use_column
 declare
   authenticated_user_id uuid := auth.uid();
   authenticated_phone text;

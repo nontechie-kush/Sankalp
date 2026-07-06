@@ -1,11 +1,3 @@
-alter table public.mweb_leads
-  add column if not exists last_verified_at timestamptz,
-  add column if not exists phone_verified_at timestamptz;
-
-update public.mweb_leads
-set last_verified_at = coalesce(last_verified_at, phone_verified_at),
-    phone_verified_at = coalesce(phone_verified_at, last_verified_at);
-
 create or replace function public.upsert_mweb_authenticated_lead(lead_name text default null)
 returns table (lead_id uuid, phone text, name text)
 language plpgsql
