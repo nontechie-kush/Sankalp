@@ -866,9 +866,6 @@ function SiteHeader({
         </button>
 
         <div className="site-actions">
-          <span className="location-pill">
-            <MapPin /> Mumbai
-          </span>
           {authStatus === "guest" && (
             <button className="track-button" onClick={onSignIn}>
               <LogIn /> Sign in

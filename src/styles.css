@@ -272,24 +272,6 @@ summary:focus-visible {
   padding-bottom: 112px;
 }
 
-.location-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--line);
-  background: rgba(255, 253, 248, 0.72);
-  color: var(--muted);
-  border-radius: 99px;
-  padding: 8px 11px;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.location-pill svg {
-  width: 15px;
-  color: var(--clay);
-}
-
 .greeting {
   border-bottom: 1px solid var(--soft-line);
   background:
@@ -1797,11 +1779,6 @@ p {
 }
 
 @media (max-width: 380px) {
-  .site-actions:has(.track-button) .location-pill,
-  .site-actions:has(.account-button) .location-pill {
-    display: none;
-  }
-
   .checkout-nav-row {
     grid-template-columns: 64px 1fr 48px;
   }
@@ -1812,12 +1789,6 @@ p {
 
   .hero-actions .primary-button {
     width: 100%;
-  }
-}
-
-@media (max-width: 560px) {
-  .site-actions:has(.account-button) .location-pill {
-    display: none;
   }
 }
 
@@ -1834,11 +1805,6 @@ p {
 
   .brand-copy strong {
     font-size: 23px;
-  }
-
-  .location-pill {
-    padding: 9px 13px;
-    font-size: 12px;
   }
 
   .checkout-nav {
