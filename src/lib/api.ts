@@ -6,6 +6,8 @@ import type {
   CreatedBooking,
   MemberProfile,
   PlaceSuggestion,
+  RazorpayCheckoutResult,
+  RazorpayOrder,
   VerifiedLead,
 } from "../types";
 
@@ -125,6 +127,41 @@ export async function searchBirthPlaces(input: string): Promise<PlaceSuggestion[
   return (data?.suggestions ?? []) as PlaceSuggestion[];
 }
 
+export async function createRazorpayOrder(bookingId: string): Promise<RazorpayOrder> {
+  const { data, error } = await supabase.functions.invoke("razorpay-create-order", {
+    body: { bookingId },
+  });
+  if (error) throw new Error(await functionErrorMessage(error, "Payment could not be started."));
+  return data as RazorpayOrder;
+}
+
+export async function verifyRazorpayPayment(
+  bookingId: string,
+  result: RazorpayCheckoutResult,
+) {
+  const { data, error } = await supabase.functions.invoke("razorpay-verify-payment", {
+    body: {
+      bookingId,
+      razorpayOrderId: result.razorpay_order_id,
+      razorpayPaymentId: result.razorpay_payment_id,
+      razorpaySignature: result.razorpay_signature,
+    },
+  });
+  if (error) throw new Error(await functionErrorMessage(error, "Payment could not be verified."));
+  return data as { booking_id: string; status: string; payment_status: string };
+}
+
+async function functionErrorMessage(error: unknown, fallback: string) {
+  if (!error || typeof error !== "object") return fallback;
+  let message = "message" in error && typeof error.message === "string" ? error.message : fallback;
+  const context = "context" in error ? error.context : null;
+  if (context instanceof Response) {
+    const body = await context.clone().json().catch(() => null) as { error?: string } | null;
+    message = body?.error || message;
+  }
+  return message;
+}
+
 export async function loadMyBookings() {
   const { data, error } = await supabase.rpc("list_my_mweb_bookings");
   if (error) throw error;
@@ -160,13 +197,4 @@ export async function createMyBooking(input: {
   const created = (data?.[0] ?? null) as CreatedBooking | null;
   if (!created) throw new Error("The booking could not be created.");
   return created;
-}
-
-export async function payMyBooking(bookingId: string, idempotencyKey: string) {
-  const { data, error } = await supabase.rpc("pay_my_mweb_booking", {
-    p_booking_id: bookingId,
-    p_idempotency_key: idempotencyKey,
-  });
-  if (error) throw error;
-  return data?.[0] ?? null;
 }

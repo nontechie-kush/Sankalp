@@ -164,6 +164,58 @@ export class SankalpMockApi {
       });
     });
 
+    await this.page.route("**/functions/v1/razorpay-create-order", async (route) => {
+      const input = route.request().postDataJSON() as { bookingId: string };
+      const selectedBooking = this.storedBookings.find((item) => item.booking_id === input.bookingId)
+        ?? booking;
+      await route.fulfill({
+        status: 200,
+        json: {
+          keyId: "rzp_test_policy",
+          orderId: `order_${input.bookingId.replaceAll("-", "").slice(0, 14)}`,
+          amount: selectedBooking.amount_minor,
+          currency: selectedBooking.currency,
+          bookingNumber: selectedBooking.booking_number,
+          description: selectedBooking.ritual_title,
+        },
+      });
+    });
+
+    await this.page.route("**/functions/v1/razorpay-verify-payment", async (route) => {
+      const input = route.request().postDataJSON() as { bookingId: string };
+      this.storedBookings = this.storedBookings.map((item) =>
+        item.booking_id === input.bookingId
+          ? { ...item, status: "pending_assignment", payment_status: "paid" }
+          : item,
+      );
+      await route.fulfill({
+        status: 200,
+        json: {
+          booking_id: input.bookingId,
+          status: "pending_assignment",
+          payment_status: "paid",
+        },
+      });
+    });
+
+    await this.page.route("https://checkout.razorpay.com/v1/checkout.js", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: `window.Razorpay = class {
+          constructor(options) { this.options = options; this.events = {}; }
+          on(name, handler) { this.events[name] = handler; }
+          open() {
+            setTimeout(() => this.options.handler({
+              razorpay_order_id: this.options.order_id,
+              razorpay_payment_id: "pay_policy_success",
+              razorpay_signature: "${"a".repeat(64)}"
+            }), 0);
+          }
+        };`,
+      });
+    });
+
     await this.page.route("**/rest/v1/rpc/**", async (route) => {
       const rpcName = new URL(route.request().url()).pathname.split("/").at(-1) ?? "";
       let body: unknown;
@@ -203,19 +255,6 @@ export class SankalpMockApi {
           this.storedBookings = [booking, ...this.storedBookings];
         }
         body = [{ booking_id: bookingId, booking_number: booking.booking_number }];
-      } else if (rpcName === "pay_my_mweb_booking") {
-        const requestedId = (route.request().postDataJSON() as { p_booking_id?: string }).p_booking_id;
-        this.storedBookings = this.storedBookings.map((item) =>
-          item.booking_id === requestedId
-            ? { ...item, status: "pending_assignment", payment_status: "paid" }
-            : item,
-        );
-        const paid = this.storedBookings.find((item) => item.booking_id === requestedId);
-        body = [{
-          booking_id: requestedId,
-          status: paid?.status ?? "pending_assignment",
-          payment_status: paid?.payment_status ?? "paid",
-        }];
       } else if (rpcName === "get_my_mweb_booking") {
         const requestedId = (route.request().postDataJSON() as { p_booking_id?: string }).p_booking_id;
         body = this.storedBookings.filter((item) => item.booking_id === requestedId);

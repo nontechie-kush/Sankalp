@@ -85,6 +85,21 @@ export interface PlaceSuggestion {
   secondaryText: string;
 }
 
+export interface RazorpayOrder {
+  keyId: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  bookingNumber: string;
+  description: string;
+}
+
+export interface RazorpayCheckoutResult {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 export interface BookingDraft {
   useCaseId: string;
   startedAt: string;

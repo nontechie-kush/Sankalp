@@ -41,7 +41,7 @@ test("guest booking creates a member session and reaches server-backed status", 
   });
 
   await test.step("confirm and track the server-backed booking", async () => {
-    await page.getByRole("button", { name: /Confirm booking/ }).click();
+    await page.getByRole("button", { name: /Pay securely/ }).click();
     await expect(page).toHaveURL(new RegExp(`/booking-confirmed/${bookingId}$`));
     await expect(page.getByText("Booking confirmed", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "SKTEST1" })).toBeVisible();

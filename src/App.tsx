@@ -36,15 +36,17 @@ import {
 import { useAuth } from "./auth";
 import {
   createMyBooking,
+  createRazorpayOrder,
   getMyBooking,
   loadAppData,
   loadMyBookings,
-  payMyBooking,
   requestOtp,
   searchBirthPlaces,
   updateMyProfile,
+  verifyRazorpayPayment,
   verifyOtp,
 } from "./lib/api";
+import { openRazorpayCheckout } from "./lib/razorpay";
 import {
   clearBookingDraft,
   consumeAuthReturnTo,
@@ -423,10 +425,22 @@ export default function App() {
     go("/profile/name");
   }
 
+  async function completeRazorpayPayment(bookingId: string) {
+    const order = await createRazorpayOrder(bookingId);
+    const checkoutResult = await openRazorpayCheckout(order, auth.profile);
+    await verifyRazorpayPayment(bookingId, checkoutResult);
+    const paidBooking = await getMyBooking(bookingId);
+    if (!paidBooking || paidBooking.payment_status !== "paid") {
+      throw new Error("Payment was verified but the booking status could not be refreshed.");
+    }
+    return paidBooking;
+  }
+
   async function pay() {
     if (!draft || !selectedRitual || !selectedUseCase || auth.status !== "authenticated") return;
     setBusy(true);
     setError(null);
+    let createdBookingId: string | null = null;
     try {
       const created = await createMyBooking({
         ritualId: selectedRitual.id,
@@ -436,15 +450,15 @@ export default function App() {
         intentNote: `${selectedUseCase.title}. ${fulfilment.title} (${fulfilment.dateLabel}). ${fulfilment.detail}`,
         clientRequestId: draft.clientRequestId,
       });
-      await payMyBooking(created.booking_id, draft.paymentIdempotencyKey);
-      const confirmedBooking = await getMyBooking(created.booking_id);
-      if (!confirmedBooking) throw new Error("The booking could not be retrieved.");
+      createdBookingId = created.booking_id;
+      const confirmedBooking = await completeRazorpayPayment(created.booking_id);
       setCurrentBooking(confirmedBooking);
       clearBookingDraft();
       setDraft(null);
       await refreshBookings();
       go(`/booking-confirmed/${created.booking_id}`, true);
     } catch (reason) {
+      if (createdBookingId) await refreshBookings();
       setError(errorMessage(reason) || "The payment could not be completed.");
     } finally {
       setBusy(false);
@@ -455,7 +469,8 @@ export default function App() {
     setBusy(true);
     setBookingsError(null);
     try {
-      await payMyBooking(booking.booking_id, crypto.randomUUID());
+      const paidBooking = await completeRazorpayPayment(booking.booking_id);
+      setCurrentBooking(paidBooking);
       await refreshBookings();
       go(`/bookings/${booking.booking_id}`);
     } catch (reason) {
@@ -1613,7 +1628,7 @@ function PaymentView({
       <div className="scroll-area with-bar">
         <section className="payment-card">
           <CreditCard />
-          <span>Secure checkout</span>
+          <span>Secure Razorpay checkout</span>
           <h1>{formatMoney(useCase.price_minor, useCase.currency)}</h1>
           <p>Payment confirms your booking and the fulfilment window shown below.</p>
         </section>
@@ -1635,7 +1650,7 @@ function PaymentView({
       <BottomBar
         label="Pay now"
         value={formatMoney(useCase.price_minor, useCase.currency)}
-        action={busy ? "Processing" : "Confirm booking"}
+        action={busy ? "Processing" : "Pay securely"}
         onAction={onPay}
         disabled={busy}
       />

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title description">
+  <title id="title">Sankalp by Tathastu</title>
+  <desc id="description">Dark Sankalp wordmark with a clay orange ritual sparkle symbol, designed for a light background.</desc>
+  <defs>
+    <linearGradient id="clay" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#BD6842"/>
+      <stop offset="1" stop-color="#9D5132"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="40" y="48" width="224" height="224" rx="64" fill="url(#clay)"/>
+  <g transform="translate(76 84) scale(6.33)" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+    <path d="M5 3v4M3 5h4M19 17v4M17 19h4"/>
+  </g>
+
+  <text x="310" y="160" fill="#2B241F" font-family="Georgia, 'Times New Roman', serif" font-size="112" font-weight="600">Sankalp</text>
+  <text x="316" y="221" fill="#766D65" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700" letter-spacing="6">BY TATHASTU</text>
+</svg>
