@@ -100,10 +100,19 @@ export function getFulfilmentExpectation(now = new Date()): FulfilmentExpectatio
 export function getBookingFulfilmentExpectation(
   serviceDateIso: string | null | undefined,
   bookedBeforeCutoff: boolean,
+  now = new Date(),
 ): FulfilmentExpectation {
-  if (!serviceDateIso) return getFulfilmentExpectation();
+  if (!serviceDateIso) return getFulfilmentExpectation(now);
 
-  const today = getFulfilmentExpectation(new Date()).serviceDateIso;
+  const dateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const datePart = (type: Intl.DateTimeFormatPartTypes) =>
+    dateParts.find((part) => part.type === type)?.value ?? "";
+  const today = `${datePart("year")}-${datePart("month")}-${datePart("day")}`;
   const tomorrowDate = new Date(`${today}T00:00:00Z`);
   tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
   const tomorrow = tomorrowDate.toISOString().slice(0, 10);
@@ -113,7 +122,9 @@ export function getBookingFulfilmentExpectation(
   return {
     isSameDay,
     title: isSameDay
-      ? "Expected today"
+      ? bookedBeforeCutoff
+        ? "Expected today"
+        : "Performed by end of today"
       : serviceDateIso === tomorrow
         ? "Performed by tomorrow"
         : "Scheduled performance",

@@ -41,12 +41,23 @@ describe("format helpers", () => {
     expect(expectation.dateLabel).toContain("6 Jul");
   });
 
-  it("uses the server cutoff decision in an existing booking explanation", () => {
-    expect(getBookingFulfilmentExpectation(todayIso(), false).detail).toContain(
-      "at or after 2 PM",
-    );
-    expect(getBookingFulfilmentExpectation(todayIso(), true).detail).toContain(
-      "before 2 PM",
-    );
+  it("does not call tomorrow today for an 11:04 PM Mumbai booking", () => {
+    const bookingTime = new Date("2026-07-06T17:34:00.000Z");
+    const afterCutoff = getBookingFulfilmentExpectation("2026-07-07", false, bookingTime);
+
+    expect(afterCutoff.title).toBe("Performed by tomorrow");
+    expect(afterCutoff.dateLabel).toContain("By Tue, 7 Jul");
+    expect(afterCutoff.detail).toContain("at or after 2 PM");
+  });
+
+  it("keeps the server cutoff explanation after the promised date becomes today", () => {
+    const nextMorning = new Date("2026-07-07T03:30:00.000Z");
+    const afterCutoff = getBookingFulfilmentExpectation("2026-07-07", false, nextMorning);
+    const beforeCutoff = getBookingFulfilmentExpectation("2026-07-07", true, nextMorning);
+
+    expect(afterCutoff.title).toBe("Performed by end of today");
+    expect(afterCutoff.detail).toContain("at or after 2 PM");
+    expect(beforeCutoff.title).toBe("Expected today");
+    expect(beforeCutoff.detail).toContain("before 2 PM");
   });
 });
