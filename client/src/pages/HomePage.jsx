@@ -8,6 +8,7 @@ import StoryAnimation from '../components/StoryAnimation';
 const FAQS = [
   { q: 'So, how does this actually work?', a: 'You choose your moment, we find a verified pandit and schedule the ritual at an auspicious muhurat. You receive a confirmation when the ritual is done.' },
   { q: 'What do I have to do?', a: 'Nothing except place the booking. We handle the pandit, the timing, the ritual, and send you the confirmation. No calls, no coordination needed.' },
+  { q: 'When will I receive the ritual video?', a: 'If you book by 2 PM IST, the video is usually shared within 12 hours. Later bookings are usually shared within 24 hours. Inauspicious days may delay the ritual, and we will show the reason clearly.' },
   { q: 'Can I use a number from outside India?', a: 'Yes. We verify via OTP — any mobile number that can receive SMS works. The booking is performed by a pandit in India on your behalf.' },
 ];
 
@@ -375,7 +376,7 @@ export default function HomePage() {
           <div className="hero">
             <h1 className="hero-title">Choose the moment.<br />We handle the ritual.</h1>
             <div className="hero-cta-row">
-              <span className="hero-note">Verified pandits · Starts at ₹199</span>
+              <span className="hero-note">Verified pandits · Starts at ₹149 · video in 12–24 hours</span>
             </div>
           </div>
         </div>
@@ -384,7 +385,7 @@ export default function HomePage() {
         <div className="container" id="browse">
           <div className="section">
             <p className="section-label">Featured Services</p>
-            <h2 className="section-title">Rituals for the moment you are in</h2>
+            <h2 className="section-title">Rituals for moments that matter</h2>
             <div className="ritual-grid">
               {RITUALS.map(r => (
                 <RitualBannerCard key={r.id} ritual={r} onClick={() => navigate(`/ritual/${r.id}`)} />
@@ -428,7 +429,7 @@ export default function HomePage() {
         <div className="container">
           <div className="section">
             <p className="section-label">How it works</p>
-            <h2 className="section-title">Five steps that loop right back to you.</h2>
+            <h2 className="section-title">How Sankalp works in 5 steps</h2>
             <StoryAnimation />
           </div>
         </div>
@@ -459,7 +460,7 @@ export default function HomePage() {
         <div className="container">
           <div className="section">
             <p className="section-label">Browse by moment</p>
-            <h2 className="section-title">What is happening right now?</h2>
+            <h2 className="section-title">What moment are you preparing for?</h2>
             <BrowseByMoment onSelect={handleMomentSelect} />
           </div>
         </div>
@@ -486,8 +487,8 @@ export default function HomePage() {
         {/* Bottom CTA */}
         <div className="container">
           <div style={{ textAlign: 'center', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '36px 24px', marginBottom: 40 }}>
-            <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Ready to sort something?</p>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 24 }}>Starts at ₹199 · no account needed</p>
+            <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Ready to book your Sankalp?</p>
+            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 24 }}>Starts at ₹149 · OTP verified booking</p>
           </div>
         </div>
       </main>
