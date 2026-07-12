@@ -2,14 +2,19 @@ import { createContext, useContext, useState } from 'react';
 
 const Ctx = createContext(null);
 
-export function BookingProvider({ children }) {
-  const [booking, setBooking] = useState({
+function emptyBooking() {
+  return {
     ritualId: null, ritualName: '', momentId: null, momentName: '',
     price: 0, deliveryDate: '', phone: '', userName: '',
-  });
+    clientRequestId: crypto.randomUUID(),
+  };
+}
+
+export function BookingProvider({ children }) {
+  const [booking, setBooking] = useState(emptyBooking);
 
   const update = (patch) => setBooking(prev => ({ ...prev, ...patch }));
-  const reset  = () => setBooking({ ritualId: null, ritualName: '', momentId: null, momentName: '', price: 0, deliveryDate: '', phone: '', userName: '' });
+  const reset  = () => setBooking(emptyBooking());
 
   return <Ctx.Provider value={{ booking, update, reset }}>{children}</Ctx.Provider>;
 }

@@ -1,35 +1,54 @@
-export function getToken() { return localStorage.getItem('sankalp_token'); }
-export function setToken(t) { localStorage.setItem('sankalp_token', t); }
-export function getStoredUser() {
-  try { return JSON.parse(localStorage.getItem('sankalp_user') || 'null'); }
-  catch { return null; }
+import { supabase } from './supabase';
+
+export function getToken() {
+  return localStorage.getItem('sankalp_token');
 }
-export function setStoredUser(user) { localStorage.setItem('sankalp_user', JSON.stringify(user || {})); }
+
+export function setToken(token) {
+  if (token) localStorage.setItem('sankalp_token', token);
+}
+
+export function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('sankalp_user') || 'null');
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user) {
+  localStorage.setItem('sankalp_user', JSON.stringify(user || {}));
+}
+
 export function clearToken() {
   localStorage.removeItem('sankalp_token');
   localStorage.removeItem('sankalp_user');
+  void supabase.auth.signOut({ scope: 'local' });
 }
 
 export function tokenPayload() {
+  const stored = getStoredUser();
+  if (stored?.phone) return stored;
+
   try {
-    const t = getToken();
-    if (!t) return null;
-    const p = JSON.parse(atob(t.split('.')[1]));
-    if (p.exp * 1000 <= Date.now()) {
+    const token = getToken();
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (payload.exp && payload.exp * 1000 <= Date.now()) {
       clearToken();
       return null;
     }
-    const stored = getStoredUser();
     return {
-      ...p,
-      phone: stored?.phone || p.phone,
-      name: stored?.name || p.name || '',
-      gotra: stored?.gotra || p.gotra || '',
+      ...payload,
+      phone: payload.phone || payload.user_metadata?.phone || '',
+      name: payload.user_metadata?.full_name || payload.name || '',
     };
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 export function authHeaders() {
-  const t = getToken();
-  return t ? { Authorization: `Bearer ${t}` } : {};
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }

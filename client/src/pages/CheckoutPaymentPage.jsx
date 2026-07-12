@@ -2,56 +2,77 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { api } from '../lib/api';
-import { getToken, tokenPayload } from '../lib/auth';
 import { useBooking } from '../context/BookingContext';
 
 export default function CheckoutPaymentPage() {
   const navigate = useNavigate();
-  const { booking, update, reset } = useBooking();
+  const { booking, update } = useBooking();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const user = tokenPayload();
   if (!booking.momentId || !booking.phone) { navigate('/'); return null; }
 
   async function pay() {
     setLoading(true); setError('');
-    const amountPaise = booking.price * 100;
-    const d = await api.createOrder(amountPaise, { ritual: booking.ritualName, moment: booking.momentName, place: booking.place || '' });
-    if (!d.success) { setLoading(false); setError('Could not initiate payment. Try again.'); return; }
+    const created = booking.bookingId
+      ? { success: true, bookingId: booking.bookingId, bookingRef: booking.bookingRef }
+      : await api.createBooking(booking);
+    if (!created.success) {
+      setLoading(false);
+      setError(created.error || 'Could not create the booking. Try again.');
+      return;
+    }
+
+    update({
+      bookingId: created.bookingId,
+      bookingRef: created.bookingRef,
+      ...(created.amountPaise ? { price: Math.round(created.amountPaise / 100) } : {}),
+    });
+
+    const d = await api.createOrder(created.bookingId);
+    if (!d.success) {
+      setLoading(false);
+      setError(d.error || 'Could not initiate payment. Try again.');
+      return;
+    }
+
+    const order = d.order;
+    if (!order?.keyId || !order?.orderId || !order?.amount) {
+      setLoading(false);
+      setError('Payment gateway did not return a valid order. Try again.');
+      return;
+    }
+
+    if (!window.Razorpay) {
+      setLoading(false);
+      setError('Payment checkout could not load. Refresh and try again.');
+      return;
+    }
 
     const options = {
-      key: d.order.key,
-      amount: d.order.amount,
-      currency: d.order.currency || 'INR',
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency || 'INR',
       name: 'Sankalp',
       description: `${booking.ritualName} · ${booking.momentName}`,
-      order_id: d.order.id,
+      order_id: order.orderId,
       handler: async (response) => {
         const v = await api.verifyPay({
+          bookingId: created.bookingId,
+          bookingRef: created.bookingRef || order.bookingNumber,
           razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,
           razorpay_signature: response.razorpay_signature,
-          bookingData: {
-            ritual: booking.ritualName,
-            ritualKey: booking.ritualId,
-            moment: booking.momentName,
-            date: booking.slotDate || new Date().toISOString().split('T')[0],
-            slot: booking.slotLabel || booking.deliveryDate,
-            place: booking.place || '',
-            price: `Rs ${booking.price}`,
-            amountPaise,
-          },
         });
         if (v.success) {
-          update({ bookingRef: v.bookingRef, paymentId: v.paymentId });
-          window.location.href = '/booking/' + v.bookingRef;
+          update({ bookingRef: v.bookingRef || order.bookingNumber, paymentId: v.paymentId });
+          navigate('/booking/' + (v.bookingRef || order.bookingNumber));
         } else {
           setError('Payment received but confirmation failed. Save your payment ID: ' + response.razorpay_payment_id);
           setLoading(false);
         }
       },
-      prefill: { contact: booking.phone },
+      prefill: { name: booking.userName || undefined, contact: booking.phone },
       theme: { color: '#7D4A2F' },
       modal: { ondismiss: () => setLoading(false) },
     };
