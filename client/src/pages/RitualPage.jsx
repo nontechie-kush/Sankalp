@@ -7,8 +7,133 @@ const RITUAL_ICONS = {
   nb: <><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.3"/></>,
 };
 import Navbar from '../components/Navbar';
-import { RITUALS, getDeliveryDate } from '../data/rituals';
+import { RITUALS } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
+
+const RITUAL_DETAIL_COPY = {
+  rk: {
+    why: [
+      'For moments where you want to feel protected, steady, and less affected by negativity.',
+      'People usually choose it before interviews, exams, travel, health procedures, or a major first day.',
+    ],
+    pandit: [
+      'Takes your name in the sankalp and sets the intention for your selected moment.',
+      'Recites protective mantras and performs the Raksha Kavach vidhi on your behalf.',
+      'Shares completion status and ritual proof once the puja is done.',
+    ],
+  },
+  da: {
+    why: [
+      'For money, business, career, and new-venture moments where you want an auspicious start.',
+      'People usually choose it before pitches, salary conversations, launches, purchases, or property decisions.',
+    ],
+    pandit: [
+      'Takes your name in the sankalp and invokes Lakshmi-Kuber blessings for prosperity.',
+      'Performs mantra japa, offerings, and aarti for your selected wealth intention.',
+      'Shares completion status and ritual proof once the puja is done.',
+    ],
+  },
+  ps: {
+    why: [
+      'For relationship moments where you want courage, softness, harmony, or emotional clarity.',
+      'People usually choose it before proposing, reconnecting, resolving a fight, or strengthening a bond.',
+    ],
+    pandit: [
+      'Takes your name in the sankalp and sets the intention for harmony in the relationship.',
+      'Performs mantras and offerings dedicated to love, peace, and emotional alignment.',
+      'Shares completion status and ritual proof once the puja is done.',
+    ],
+  },
+  nb: {
+    why: [
+      'For phases where things feel heavy, blocked, or affected by nazar after a good run.',
+      'People usually choose it for home, business, vehicle, family, health, or repeated bad-luck situations.',
+    ],
+    pandit: [
+      'Takes your name in the sankalp and performs the nazar utaarna vidhi.',
+      'Uses traditional mantras and remedies to clear drishti dosha and heavy energy.',
+      'Shares completion status and ritual proof once the puja is done.',
+    ],
+  },
+};
+
+function getIstParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(date);
+
+  return {
+    hour: Number(parts.find(part => part.type === 'hour')?.value || 0),
+    minute: Number(parts.find(part => part.type === 'minute')?.value || 0),
+  };
+}
+
+function formatDeliveryLabel(date) {
+  return date.toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function getFulfilmentPreview(now = new Date()) {
+  const { hour, minute } = getIstParts(now);
+  const isBeforeCutoff = hour < 14 || (hour === 14 && minute === 0);
+  const hours = isBeforeCutoff ? 12 : 24;
+  const byDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
+
+  return {
+    hours,
+    title: `Video within ${hours} hours`,
+    dateLabel: formatDeliveryLabel(byDate),
+    sub: isBeforeCutoff
+      ? 'Bookings made by 2 PM IST are usually completed and shared within 12 hours, unless the day is inauspicious.'
+      : 'Bookings after 2 PM IST are usually completed and shared within 24 hours, unless the day is inauspicious.',
+  };
+}
+
+function getSankalpCopy(ritual, moment) {
+  const fallback = {
+    why: [
+      'For a meaningful moment where you want to enter with a clear intention.',
+      'People choose it to feel more prepared, supported, and grounded before the event.',
+    ],
+    pandit: [
+      'Takes your name in the sankalp and sets the intention for your selected moment.',
+      'Performs the relevant mantras and offerings on your behalf.',
+      'Shares completion status and ritual proof once the puja is done.',
+    ],
+  };
+
+  const copy = RITUAL_DETAIL_COPY[ritual.id] || fallback;
+  return {
+    why: [
+      moment.why,
+      ...copy.why,
+    ],
+    pandit: copy.pandit,
+  };
+}
+
+function BulletList({ items }) {
+  return (
+    <ul style={{ display: 'grid', gap: 10, margin: 0, padding: 0, listStyle: 'none' }}>
+      {items.map((item, index) => (
+        <li key={index} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.55 }}>
+          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(186,98,55,.12)', color: 'var(--primary-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto', marginTop: 1 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12">
+              <path d="m5 12 4 4L19 6" />
+            </svg>
+          </span>
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function StepBar({ step, total, title, onBack }) {
   return (
@@ -47,16 +172,21 @@ export default function RitualPage() {
   }
 
   function pickMoment(moment) {
+    const fulfilment = getFulfilmentPreview();
     update({
       ritualId: ritual.id,
       ritualName: ritual.name,
       momentId: moment.id,
       momentName: moment.name,
       price: moment.price,
-      deliveryDate: getDeliveryDate(),
+      deliveryDate: fulfilment.dateLabel,
+      deliveryWindowHours: fulfilment.hours,
     });
     navigate(`/ritual/${ritual.id}/${moment.id}`);
   }
+
+  const fulfilment = getFulfilmentPreview();
+  const sankalpCopy = selectedMoment ? getSankalpCopy(ritual, selectedMoment) : null;
 
   function continueBooking() {
     if (!selectedMoment) return;
@@ -66,12 +196,11 @@ export default function RitualPage() {
       momentId: selectedMoment.id,
       momentName: selectedMoment.name,
       price: selectedMoment.price,
-      deliveryDate: getDeliveryDate(),
+      deliveryDate: fulfilment.dateLabel,
+      deliveryWindowHours: fulfilment.hours,
     });
     navigate('/checkout/slot');
   }
-
-  const delivery = getDeliveryDate();
 
   return (
     <div className="page-wrap">
@@ -80,49 +209,67 @@ export default function RitualPage() {
         <div className="checkout-wrap">
           <StepBar step={1} total={4} title="Ritual details" onBack={() => navigate('/')} />
 
-          {/* Ritual banner */}
-          <div className="ritual-banner" style={{ background: ritual.bg, marginBottom: 16 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(92,58,30,0.3)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" width="120" height="120" style={{ position: 'absolute', right: -12, bottom: -12 }}>
-              {RITUAL_ICONS[ritual.id]}
-            </svg>
-            <div style={{ position: 'absolute', top: 16, left: 16 }}>
-              <span className="badge">{ritual.tag}</span>
-            </div>
-            <h1 style={{ fontSize: 30, fontWeight: 700, color: 'rgba(28,16,7,.85)', position: 'relative', zIndex: 1 }}>{ritual.name}</h1>
-            <p style={{ fontSize: 13, color: 'rgba(28,16,7,.6)', marginTop: 6, maxWidth: 320, position: 'relative', zIndex: 1 }}>{ritual.why.slice(0, 100)}…</p>
-          </div>
-
-          {/* Selected moment */}
           {selectedMoment && (
-            <div className="card" style={{ padding: '18px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" width="20" height="20" style={{ color: 'var(--primary-light)' }}>
-                  <path d="M5 12h14M13 6l6 6-6 6"/>
-                </svg>
+            <>
+              <div className="card" style={{ padding: 24, marginBottom: 16, position: 'relative' }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" strokeLinejoin="round" width="25" height="25" style={{ color: 'var(--primary-light)' }}>
+                      {RITUAL_ICONS[ritual.id]}
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary-light)', marginBottom: 8 }}>Selected Sankalp</div>
+                    <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 31, lineHeight: 1.08, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{selectedMoment.name}</h1>
+                    <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 8 }}>
+                      Part of {ritual.name}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ borderTop: '1px solid var(--border)', marginTop: 20, paddingTop: 16, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+                  <p style={{ margin: 0, color: 'var(--text-2)', fontSize: 15, lineHeight: 1.45 }}>{selectedMoment.why}</p>
+                  <div style={{ fontWeight: 800, color: 'var(--primary-light)', fontSize: 18, whiteSpace: 'nowrap' }}>Rs {selectedMoment.price}</div>
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--primary-light)', marginBottom: 2 }}>Selected Sankalp</div>
-                <div style={{ fontFamily: 'var(--font-sans)',fontSize: 20, fontWeight: 600 }}>{selectedMoment.name}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{selectedMoment.why}</div>
+
+              <div className="card" style={{ padding: 24, marginBottom: 16 }}>
+                <div style={{ marginBottom: 22 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary-light)', marginBottom: 8 }}>Why people do this</div>
+                  <BulletList items={sankalpCopy.why} />
+                </div>
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary-light)', marginBottom: 8 }}>What the pandit may do</div>
+                  <BulletList items={sankalpCopy.pandit} />
+                </div>
               </div>
-              <div style={{ fontWeight: 700, color: 'var(--primary-light)', fontSize: 16, flexShrink: 0 }}>Rs {selectedMoment.price}</div>
-            </div>
+
+              <div className="timeline-card">
+                <div className="timeline-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" width="20" height="20">
+                    <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="timeline-label">Ritual video timeline</div>
+                  <div className="timeline-title">{fulfilment.title}</div>
+                  <div className="timeline-sub">{fulfilment.sub}</div>
+                </div>
+                <div className="timeline-date">By {fulfilment.dateLabel}</div>
+              </div>
+            </>
           )}
 
-          {/* Timeline */}
-          {selectedMoment && (
-            <div className="timeline-card">
-              <div className="timeline-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" width="20" height="20">
-                  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
-                </svg>
+          {/* Ritual banner */}
+          {!selectedMoment && (
+            <div className="ritual-banner" style={{ background: ritual.bg, marginBottom: 16 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(92,58,30,0.3)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" width="120" height="120" style={{ position: 'absolute', right: -12, bottom: -12 }}>
+                {RITUAL_ICONS[ritual.id]}
+              </svg>
+              <div style={{ position: 'absolute', top: 16, left: 16 }}>
+                <span className="badge">{ritual.tag}</span>
               </div>
-              <div style={{ flex: 1 }}>
-                <div className="timeline-label">Performance Timeline</div>
-                <div className="timeline-title">Performed by tomorrow</div>
-                <div className="timeline-sub">Bookings placed at or after 2 PM are performed by the end of the next day.</div>
-              </div>
-              <div className="timeline-date">By {delivery}</div>
+              <h1 style={{ fontSize: 30, fontWeight: 700, color: 'rgba(28,16,7,.85)', position: 'relative', zIndex: 1 }}>{ritual.name}</h1>
+              <p style={{ fontSize: 13, color: 'rgba(28,16,7,.6)', marginTop: 6, maxWidth: 320, position: 'relative', zIndex: 1 }}>{ritual.why.slice(0, 100)}…</p>
             </div>
           )}
 
@@ -164,7 +311,7 @@ export default function RitualPage() {
       {selectedMoment && (
         <div className="bottom-bar">
           <div className="bottom-bar-info">
-            <div className="bottom-bar-label">Performed by tomorrow</div>
+            <div className="bottom-bar-label">{fulfilment.title}</div>
             <div className="bottom-bar-price">Rs {selectedMoment.price}</div>
           </div>
           <button className="btn-primary" onClick={continueBooking}>Continue booking →</button>
