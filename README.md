@@ -59,8 +59,8 @@ Do not send phone numbers, names, OTPs, or payment IDs in analytics events.
 Versioned backend files are in:
 
 - `supabase/migrations/`
-- `supabase/functions/razorpay-create-order`
-- `supabase/functions/razorpay-verify-payment`
+- `supabase/functions/razorpay-create-order-v2`
+- `supabase/functions/razorpay-verify-payment-v2`
 - `supabase/functions/place-autocomplete`
 
 Before production deployment, apply the migrations to the target Supabase project and deploy the Edge Functions.

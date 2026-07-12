@@ -248,7 +248,7 @@ export const api = {
         : meta?.bookingId;
       if (!bookingId) throw new Error('Create the booking before starting payment.');
 
-      const { data, error } = await supabase.functions.invoke('razorpay-create-order', {
+      const { data, error } = await supabase.functions.invoke('razorpay-create-order-v2', {
         body: { bookingId },
       });
       if (error) throw await functionError(error, 'Payment could not be started.');
@@ -262,7 +262,7 @@ export const api = {
     try {
       const bookingId = payload.bookingId;
       if (!bookingId) throw new Error('Missing booking id for payment verification.');
-      const { data, error } = await supabase.functions.invoke('razorpay-verify-payment', {
+      const { data, error } = await supabase.functions.invoke('razorpay-verify-payment-v2', {
         body: {
           bookingId,
           razorpayOrderId: payload.razorpay_order_id,
