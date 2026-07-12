@@ -110,11 +110,6 @@ function Scene1() {
       <rect x="313" y="168" width="46" height="24" rx="3.5" fill="#141416"
         transform="rotate(-8,336,180)"/>
 
-      <rect x="0" y="233" width="400" height="27" fill="rgba(0,0,0,0.35)"/>
-      <text x="200" y="251" fill="#7A9AB8" fontSize="12.5" textAnchor="middle"
-        fontFamily="system-ui,sans-serif" fontWeight="500">
-        Feeling anxious before something that matters...
-      </text>
     </svg>
   );
 }
@@ -254,11 +249,6 @@ function Scene2() {
         <animate attributeName="opacity" values="0;0.7" dur="0.6s" fill="freeze" begin="1.8s"/>
       </text>
 
-      <rect x="0" y="233" width="400" height="27" fill="rgba(0,0,0,0.25)"/>
-      <text x="200" y="251" fill="#FFE0C0" fontSize="12.5" textAnchor="middle"
-        fontFamily="system-ui,sans-serif" fontWeight="500">
-        Opens Sankalp — finds the right ritual instantly
-      </text>
     </svg>
   );
 }
@@ -348,11 +338,6 @@ function Scene3() {
         <animate attributeName="opacity" values="0;1" dur="0.3s" fill="freeze" begin="1.1s"/>
       </text>
 
-      <rect x="0" y="233" width="400" height="27" fill="rgba(180,100,30,0.1)"/>
-      <text x="200" y="251" fill="#7D4A2F" fontSize="12.5" textAnchor="middle"
-        fontFamily="system-ui,sans-serif" fontWeight="600">
-        Books the ritual — confirmed in under a minute
-      </text>
     </svg>
   );
 }
@@ -499,11 +484,6 @@ function Scene4() {
         </ellipse>
       ))}
 
-      <rect x="0" y="233" width="400" height="27" fill="rgba(0,0,0,0.45)"/>
-      <text x="200" y="251" fill="#E8C050" fontSize="12.5" textAnchor="middle"
-        fontFamily="system-ui,sans-serif" fontWeight="500">
-        Verified pandit performs the Sankalp in your name
-      </text>
     </svg>
   );
 }
@@ -635,11 +615,6 @@ function Scene5() {
       <text x="308" y="212" fill="#888" fontSize="6.5" textAnchor="middle"
         fontFamily="system-ui">With full Vedic rites</text>
 
-      <rect x="0" y="233" width="400" height="27" fill="rgba(180,100,30,0.09)"/>
-      <text x="200" y="251" fill="#7D4A2F" fontSize="12.5" textAnchor="middle"
-        fontFamily="system-ui,sans-serif" fontWeight="600">
-        Certificate &amp; video proof — delivered to WhatsApp
-      </text>
     </svg>
   );
 }
