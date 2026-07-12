@@ -1,76 +1,123 @@
-# Sankalp mobile web
+# 🔥 Sankalp — rituals, sorted
 
-React mobile-web booking flow backed by Supabase and deployable on Vercel. The visual system and user flow are reconstructed from the existing Sankalp deployment, while the source code and database migrations are now version controlled.
+A Hindu ritual booking app built with Node.js, Express, Vite and React.
 
-## Included flow
+## What it does
 
-- Supabase-powered ritual catalogue, banners, use cases, slots, and FAQs
-- Ritual and intent selection
-- Mumbai-time fulfilment policy: before 2 PM is expected the same day unless inauspicious; all other bookings are performed by the next day
-- Internal Supabase slot assignment without exposing muhurat selection to customers
-- Development phone verification using OTP `1234`
-- Mock payment
-- Booking confirmation and status timeline
-- Row-level security for public catalogue data
-- Security-definer RPCs for private lead, OTP, and booking records
+Book a ritual on your phone. A verified pandit performs it at an auspicious time. The video and certificate come back to you — on the app and WhatsApp.
 
-## Local development
+## Four rituals
 
-Node.js 24 LTS is recommended.
+- **Raksha Kavach** — Protection shield (from ₹199)
+- **Dhan Aagman** — Wealth & fortune (from ₹351)
+- **Prem Setu** — For the heart (from ₹251)
+- **Nazar Badha** — Clear the evil eye (from ₹199)
+
+## Getting started
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Install & run
 
 ```bash
+# Install dependencies
 npm install
-cp .env.example .env.local
+
+# Start (production)
+npm start
+
+# Start (development with auto-reload)
 npm run dev
 ```
 
-The repository defaults to the existing Supabase project's browser-safe publishable key, so the app also runs without `.env.local`. Never add a secret or service-role key to a `VITE_` variable.
+The app runs at **http://localhost:3000**
 
-## Validation
+## Project structure
 
-```bash
-npm run check
-npm test
-npm run test:e2e
-npm run build
+```
+sankalp-app/
+├── server.js           # Express server entry point
+├── package.json
+├── .env.example        # Environment variable template
+├── routes/
+│   ├── index.js        # Page routes (SPA shell)
+│   └── api.js          # REST API endpoints
+├── src/
+│   └── data.js         # Ritual & booking data (replace with DB in prod)
+└── public/
+    ├── index.html      # Single-page app shell
+    ├── 404.html        # Not found page
+    ├── css/
+    │   └── main.css    # All styles
+    └── js/
+        └── app.js      # All UI logic
 ```
 
-The end-to-end test reads the live catalogue and stops before creating an OTP or booking.
+## API endpoints
 
-## Supabase
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/rituals` | All 4 rituals with moments |
+| GET | `/api/rituals/:key` | Single ritual (`rk`, `da`, `ps`, `nb`) |
+| GET | `/api/slots?date=YYYY-MM-DD` | Available time slots |
+| POST | `/api/bookings` | Create a booking |
+| GET | `/api/bookings` | List user's bookings |
 
-The reproducible schema and seed data are under `supabase/migrations`.
+### POST /api/bookings example
 
-For a new local Supabase stack:
-
-```bash
-npx supabase start
-npx supabase db reset
+```json
+{
+  "ritual": "Raksha Kavach",
+  "moment": "Exam day",
+  "date": "2026-06-27",
+  "slot": "11:54",
+  "price": "₹251"
+}
 ```
 
-For the existing hosted project, authenticate and link it first:
+## Screens
 
-```bash
-npx supabase login
-npx supabase link --project-ref sfzkwrrxjcdkwxakbcdz
-npx supabase db pull
-```
+1. **Home** — Banner carousel, browse by moment, how it works, people ticker, FAQ
+2. **Rituals** — All 4 rituals with full moment lists, filter chips
+3. **Time selection** — Calendar + auspicious slot picker
+4. **Payment** — UPI / Card / Netbanking
+5. **Confirmation** — Animated tick, order summary
+6. **Booking page** — Live countdown, status timeline, pandit card, certificate
+7. **Bookings** — Upcoming (countdown) + Past (video + certificate + rebook)
+8. **You / Profile** — Account info, points, preferences, toggles
 
-Review the pulled schema against the reconstructed migrations before running `npx supabase db push`. The hosted project predates this Git repository and may contain additional tables or policies that must be preserved.
+## OTP / Twilio setup
 
-The current OTP and payment functions are explicitly Phase 1 implementations. Before handling real customers:
+Phone OTP uses Supabase Auth. Configure Twilio Verify inside Supabase:
 
-- Replace the returned development OTP with an SMS provider.
-- Replace mock payment with a signed server-side payment flow and webhook verification.
-- Add an authenticated customer session or signed booking-access token instead of treating a lead UUID as the booking capability.
+1. Supabase Dashboard → Authentication → Providers → Phone.
+2. Enable Phone provider.
+3. Select Twilio Verify and add Twilio Account SID, Auth Token and Verify Service SID.
+4. Set these app env vars:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_KEY`
+   - `SUPABASE_ANON_KEY`
 
-## Vercel
+The app never stores Twilio credentials directly.
 
-After signing into the Vercel account that owns the current project:
+## Production roadmap
 
-1. Import `nontechie-kush/Sankalp` into the existing Vercel project, or connect it under **Project settings → Git**.
-2. Keep framework preset **Vite**, build command `npm run build`, and output directory `dist`.
-3. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` using `.env.example` as the reference.
-4. Deploy the `main` branch.
+- [ ] Connect Razorpay for payments
+- [ ] Connect WhatsApp Business API for video delivery
+- [x] Add Supabase/Twilio phone OTP for user accounts
+- [x] Add Supabase for bookings & user profiles
+- [ ] Add pandit admin panel for ritual management
+- [ ] Build video upload + certificate PDF generation
 
-Alternatively, use `npx vercel login`, `npx vercel link`, and `npx vercel --prod` after the Git repository has been pushed.
+## Built with
+
+- Node.js + Express
+- React + Vite
+- Google Fonts (Fraunces + Plus Jakarta Sans)
+- SVG illustrations (custom drawn)
+
+---
+
+Made with ❤️ by Sankalp
