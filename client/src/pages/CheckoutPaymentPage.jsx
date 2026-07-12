@@ -42,10 +42,27 @@ export default function CheckoutPaymentPage() {
     }
 
     const order = d.order;
+    if (order?.alreadyPaid) {
+      update({ bookingRef: created.bookingRef || order.bookingNumber });
+      navigate('/booking/' + (created.bookingRef || order.bookingNumber));
+      return;
+    }
+
     if (!order?.keyId || !order?.orderId || !order?.amount) {
       trackEvent('payment_order_invalid', bookingEventParams(booking));
       setLoading(false);
       setError('Payment gateway did not return a valid order. Try again.');
+      return;
+    }
+
+    const isLiveDomain = /(^|\.)sankkalp\.com$/i.test(window.location.hostname);
+    if (isLiveDomain && String(order.keyId).startsWith('rzp_test_')) {
+      trackEvent('payment_order_failed', {
+        ...bookingEventParams(booking),
+        reason: 'razorpay_test_key_on_live_domain',
+      });
+      setLoading(false);
+      setError('Live payments are not enabled yet. Add Razorpay live keys before accepting customer payments.');
       return;
     }
 
@@ -121,10 +138,10 @@ export default function CheckoutPaymentPage() {
                 Back
               </button>
               <span className="step-label">Payment</span>
-              <span className="step-count">4/4</span>
+              <span className="step-count">3/3</span>
             </div>
             <div className="progress-bar" style={{ marginBottom: 28 }}>
-              {[true, true, true, true].map((_, i) => <span key={i} className="active" />)}
+              {[true, true, true].map((_, i) => <span key={i} className="active" />)}
             </div>
           </div>
 

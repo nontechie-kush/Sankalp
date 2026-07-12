@@ -9,7 +9,7 @@ function BookingCard({ booking }) {
     ? new Date(booking.booking_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
     : '—';
   const isPast = booking.status === 'completed' || new Date(booking.booking_date) < new Date();
-  const price = booking.price_display || (booking.price_paise > 0 ? `Rs ${Math.round(booking.price_paise / 100)}` : 'Rs 149');
+  const price = booking.price_display || (booking.price_paise > 0 ? `Rs ${Math.round(booking.price_paise / 100)}` : '—');
 
   return (
     <div className="card" style={{ padding: '20px', marginBottom: 12 }}>

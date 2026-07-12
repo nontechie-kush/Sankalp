@@ -192,18 +192,18 @@ insert into public.mweb_ritual_use_cases (
   display_order,
   status
 ) values
-  ('c38119f9-75e4-4855-8a1e-55cce96fc324', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Career & money', 'briefcase', 'New job', 'Start the new chapter protected', 25100, 'INR', false, 1, 'active'),
-  ('d91893b2-b6b8-49c6-8659-528413fae5e7', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Career & money', 'door', 'First day at work', 'Walk in on the right foot', 25100, 'INR', true, 2, 'active'),
-  ('aa86ca6f-3d86-4e1e-8739-7f5aa4f3dca5', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Exams & study', 'pencil', 'Exam day', 'Calm focus when it counts', 25100, 'INR', true, 3, 'active'),
-  ('d1902973-cae1-4211-8f9a-ed4ee49a4a75', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Career & money', 'chat', 'Job interview', 'Steady nerves, clear head', 35100, 'INR', true, 4, 'active'),
-  ('45ee8e62-d0d4-4495-b174-fa7376c36b11', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'When it feels off', 'eyeoff', 'Feeling off lately', 'Clear the heavy energy', 19900, 'INR', true, 5, 'active'),
-  ('d0696612-5478-48d1-b09f-a839138dae1e', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'When it feels off', 'trenddown', 'A losing streak', 'Break the run of bad luck', 19900, 'INR', true, 6, 'active'),
-  ('b8841fdc-e327-4bd1-8d65-213758fd6be0', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Home & family', 'baby', 'New baby at home', 'Shield the little one', 29900, 'INR', false, 7, 'active'),
-  ('9d77aa55-0c10-4cc7-b98a-f95d95274100', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Home & family', 'car', 'New vehicle', 'Remove envy before the first drive', 19900, 'INR', false, 8, 'active'),
-  ('1e72963d-71a5-4753-938c-2e81ada74c5f', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'Home & business', 'home', 'New home / griha pravesh', 'Clear and bless the space before you move in', 35100, 'INR', true, 9, 'active'),
-  ('a9f79bcc-3260-47ca-a77a-845e41298029', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'Home & business', 'car', 'New vehicle', 'Auspicious first drive', 45100, 'INR', false, 10, 'active'),
-  ('d9901d23-006c-4d0c-bca5-2cf3822463e8', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Remote rituals', 'video', 'Live video blessing', 'Join pandit ji from home', 25100, 'INR', true, 11, 'active'),
-  ('096f3e5e-3f83-47e6-b507-2a5194943fed', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'Remote rituals', 'flame', 'Guided home havan', 'Sacred fire ritual with preparation support', 55100, 'INR', false, 12, 'active')
+  ('c38119f9-75e4-4855-8a1e-55cce96fc324', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Career & money', 'briefcase', 'New job', 'Start the new chapter protected', 14900, 'INR', false, 1, 'active'),
+  ('d91893b2-b6b8-49c6-8659-528413fae5e7', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Career & money', 'door', 'First day at work', 'Walk in on the right foot', 14900, 'INR', true, 2, 'active'),
+  ('aa86ca6f-3d86-4e1e-8739-7f5aa4f3dca5', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Exams & study', 'pencil', 'Exam day', 'Calm focus when it counts', 14900, 'INR', true, 3, 'active'),
+  ('d1902973-cae1-4211-8f9a-ed4ee49a4a75', 'ffffffff-ffff-4fff-8fff-ffffffffffff', 'Career & money', 'chat', 'Job interview', 'Steady nerves, clear head', 14900, 'INR', true, 4, 'active'),
+  ('45ee8e62-d0d4-4495-b174-fa7376c36b11', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'When it feels off', 'eyeoff', 'Feeling off lately', 'Clear the heavy energy', 14900, 'INR', true, 5, 'active'),
+  ('d0696612-5478-48d1-b09f-a839138dae1e', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'When it feels off', 'trenddown', 'A losing streak', 'Break the run of bad luck', 14900, 'INR', true, 6, 'active'),
+  ('b8841fdc-e327-4bd1-8d65-213758fd6be0', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Home & family', 'baby', 'New baby at home', 'Shield the little one', 14900, 'INR', false, 7, 'active'),
+  ('9d77aa55-0c10-4cc7-b98a-f95d95274100', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'Home & family', 'car', 'New vehicle', 'Remove envy before the first drive', 14900, 'INR', false, 8, 'active'),
+  ('1e72963d-71a5-4753-938c-2e81ada74c5f', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'Home & business', 'home', 'New home / griha pravesh', 'Clear and bless the space before you move in', 14900, 'INR', true, 9, 'active'),
+  ('a9f79bcc-3260-47ca-a77a-845e41298029', 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'Home & business', 'car', 'New vehicle', 'Auspicious first drive', 14900, 'INR', false, 10, 'active'),
+  ('d9901d23-006c-4d0c-bca5-2cf3822463e8', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Remote rituals', 'video', 'Live video blessing', 'Join pandit ji from home', 14900, 'INR', true, 11, 'active'),
+  ('096f3e5e-3f83-47e6-b507-2a5194943fed', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'Remote rituals', 'flame', 'Guided home havan', 'Sacred fire ritual with preparation support', 14900, 'INR', false, 12, 'active')
 on conflict (id) do update set
   ritual_id = excluded.ritual_id,
   group_label = excluded.group_label,

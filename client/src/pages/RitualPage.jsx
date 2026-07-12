@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const RITUAL_ICONS = {
@@ -10,6 +11,7 @@ import Navbar from '../components/Navbar';
 import { RITUALS } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
 import { trackEvent } from '../lib/analytics';
+import { applyBackendPrices, loadBackendPriceMap } from '../lib/catalogPrices';
 
 const RITUAL_DETAIL_COPY = {
   rk: {
@@ -153,8 +155,19 @@ export default function RitualPage() {
   const { ritualId, momentId } = useParams();
   const navigate = useNavigate();
   const { update } = useBooking();
+  const [rituals, setRituals] = useState(RITUALS);
 
-  const ritual = RITUALS.find(r => r.id === ritualId);
+  useEffect(() => {
+    let cancelled = false;
+    loadBackendPriceMap()
+      .then((priceMap) => {
+        if (!cancelled) setRituals(applyBackendPrices(RITUALS, priceMap));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const ritual = rituals.find(r => r.id === ritualId);
   if (!ritual) return <div style={{ padding: 40, textAlign: 'center' }}>Ritual not found. <button onClick={() => navigate('/')}>Go home</button></div>;
 
   // If a specific moment was pre-selected
@@ -213,7 +226,7 @@ export default function RitualPage() {
       deliveryDate: fulfilment.dateLabel,
       deliveryWindowHours: fulfilment.hours,
     });
-    navigate('/checkout/slot');
+    navigate('/checkout/verify');
   }
 
   return (

@@ -5,6 +5,7 @@ import { RITUALS, getDeliveryDate } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
 import StoryAnimation from '../components/StoryAnimation';
 import { trackEvent } from '../lib/analytics';
+import { applyBackendPrices, loadBackendPriceMap } from '../lib/catalogPrices';
 
 const FAQS = [
   { q: 'So, how does this actually work?', a: 'You choose your moment, we find a verified pandit and schedule the ritual at an auspicious muhurat. You receive a confirmation when the ritual is done.' },
@@ -217,15 +218,15 @@ function MomentRow({ moment, ritualId, onSelect }) {
   );
 }
 
-function BrowseByMoment({ onSelect }) {
+function BrowseByMoment({ rituals, onSelect }) {
   const [activeTab, setActiveTab] = useState(0);
-  const ritual = RITUALS[activeTab];
+  const ritual = rituals[activeTab] || rituals[0];
 
   return (
     <div>
       {/* Ritual tabs */}
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 20 }}>
-        {RITUALS.map((r, i) => (
+        {rituals.map((r, i) => (
           <button
             key={r.id}
             onClick={() => setActiveTab(i)}
@@ -271,7 +272,7 @@ function BrowseByMoment({ onSelect }) {
 // stays in sync with the 2s React step interval (5 × 2s = 10s).
 const HIW_NODES = [
   { cx: 190, cy:  47, label: 'Pick',   sub: 'your moment', desc: 'Choose the ritual and the moment that matters — exam, interview, wedding, travel or anything else.' },
-  { cx: 290, cy: 120, label: 'Time',   sub: 'choose date',  desc: 'Pick your date. The pandit selects the most auspicious muhurat within that day to perform the ritual.' },
+  { cx: 290, cy: 120, label: 'Timeline', sub: 'auto-shown', desc: 'We show when your ritual video will arrive based on the 2 PM IST cutoff and inauspicious-day rules.' },
   { cx: 252, cy: 237, label: 'Pandit', sub: 'assigned',     desc: 'A verified, experienced pandit is assigned to your booking and confirms the sankalp details.' },
   { cx: 128, cy: 237, label: 'Ritual', sub: 'performed',    desc: 'The pandit performs the ritual in your name and gotra at the chosen muhurat — you don\'t need to do anything.' },
   { cx:  90, cy: 120, label: 'Video',  sub: 'to you',       desc: 'A recording of the ritual is sent to you on the app and WhatsApp so you can watch it any time.' },
@@ -373,9 +374,21 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { update } = useBooking();
   const [openFaq, setOpenFaq] = useState(null);
+  const [rituals, setRituals] = useState(RITUALS);
+  const startingPrice = Math.min(...rituals.flatMap((ritual) => ritual.groups.flatMap((group) => group.moments.map((moment) => moment.price).filter(Boolean))));
+
+  useEffect(() => {
+    let cancelled = false;
+    loadBackendPriceMap()
+      .then((priceMap) => {
+        if (!cancelled) setRituals(applyBackendPrices(RITUALS, priceMap));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   function handleMomentSelect(ritualId, moment) {
-    const ritual = RITUALS.find(r => r.id === ritualId);
+    const ritual = rituals.find(r => r.id === ritualId);
     trackEvent('moment_selected', {
       source: 'home_browse_by_moment',
       ritual_id: ritualId,
@@ -419,7 +432,7 @@ export default function HomePage() {
             <p className="section-label">Featured Services</p>
             <h2 className="section-title">Rituals for moments that matter</h2>
             <div className="ritual-grid">
-              {RITUALS.map(r => (
+              {rituals.map(r => (
                 <RitualBannerCard
                   key={r.id}
                   ritual={r}
@@ -505,7 +518,7 @@ export default function HomePage() {
           <div className="section">
             <p className="section-label">Browse by moment</p>
             <h2 className="section-title">What moment are you preparing for?</h2>
-            <BrowseByMoment onSelect={handleMomentSelect} />
+            <BrowseByMoment rituals={rituals} onSelect={handleMomentSelect} />
           </div>
         </div>
 
@@ -532,7 +545,7 @@ export default function HomePage() {
         <div className="container">
           <div style={{ textAlign: 'center', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '36px 24px', marginBottom: 40 }}>
             <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Ready to book your Sankalp?</p>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 24 }}>Starts at ₹149 · OTP verified booking</p>
+            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 24 }}>Starts at ₹{startingPrice} · OTP verified booking</p>
           </div>
         </div>
       </main>

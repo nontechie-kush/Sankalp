@@ -15,12 +15,12 @@ function StepBar({ onBack }) {
           Back
         </button>
         <span className="step-label">Verify</span>
-        <span className="step-count">3/4</span>
+        <span className="step-count">2/3</span>
       </div>
       <div className="progress-bar" style={{ marginBottom: 28 }}>
-        {[true, true, true, false].map((a, i) => <span key={i} className={a ? 'active' : ''} />)}
+        {[true, true, false].map((a, i) => <span key={i} className={a ? 'active' : ''} />)}
       </div>
-      <p className="step-meta">Step 3 of 4</p>
+      <p className="step-meta">Step 2 of 3</p>
     </div>
   );
 }
@@ -140,7 +140,7 @@ export default function CheckoutVerifyPage() {
       <Navbar />
       <main style={{ flex: 1, paddingTop: 24, paddingBottom: 100 }}>
         <div className="checkout-wrap">
-          <StepBar onBack={() => navigate('/checkout/slot')} />
+          <StepBar onBack={() => navigate(`/ritual/${booking.ritualId}/${booking.momentId}`)} />
 
           {/* Icon + heading */}
           <div style={{ textAlign: 'center', marginBottom: 32 }}>

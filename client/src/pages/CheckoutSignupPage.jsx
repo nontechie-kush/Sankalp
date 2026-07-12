@@ -39,10 +39,10 @@ export default function CheckoutSignupPage() {
                 Back
               </button>
               <span className="step-label">Your details</span>
-              <span className="step-count">3/4</span>
+              <span className="step-count">2/3</span>
             </div>
             <div className="progress-bar" style={{ marginBottom: 28 }}>
-              {[true, true, true, false].map((a, i) => <span key={i} className={a ? 'active' : ''} />)}
+              {[true, true, false].map((a, i) => <span key={i} className={a ? 'active' : ''} />)}
             </div>
           </div>
 
