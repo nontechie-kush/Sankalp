@@ -72,6 +72,22 @@ async function activeSessionToken() {
   return token;
 }
 
+async function callPaymentApi(path, body) {
+  const token = await activeSessionToken();
+  if (!token) throw new Error('Sign in before paying.');
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body || {}),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || 'Payment could not be started.');
+  return data;
+}
+
 async function resolveSelection(booking) {
   const [ritualsResult, useCasesResult, slotsResult] = await Promise.all([
     supabase
@@ -248,10 +264,7 @@ export const api = {
         : meta?.bookingId;
       if (!bookingId) throw new Error('Create the booking before starting payment.');
 
-      const { data, error } = await supabase.functions.invoke('razorpay-create-order-v2', {
-        body: { bookingId },
-      });
-      if (error) throw await functionError(error, 'Payment could not be started.');
+      const data = await callPaymentApi('/api/payments/create-order', { bookingId });
       return ok({ order: data });
     } catch (err) {
       return fail(err);
@@ -262,15 +275,12 @@ export const api = {
     try {
       const bookingId = payload.bookingId;
       if (!bookingId) throw new Error('Missing booking id for payment verification.');
-      const { data, error } = await supabase.functions.invoke('razorpay-verify-payment-v2', {
-        body: {
-          bookingId,
-          razorpayOrderId: payload.razorpay_order_id,
-          razorpayPaymentId: payload.razorpay_payment_id,
-          razorpaySignature: payload.razorpay_signature,
-        },
+      const data = await callPaymentApi('/api/payments/verify', {
+        bookingId,
+        razorpayOrderId: payload.razorpay_order_id,
+        razorpayPaymentId: payload.razorpay_payment_id,
+        razorpaySignature: payload.razorpay_signature,
       });
-      if (error) throw await functionError(error, 'Payment could not be verified.');
       return ok({
         bookingRef: payload.bookingRef,
         bookingId: data?.booking_id || bookingId,

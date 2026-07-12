@@ -59,11 +59,18 @@ Do not send phone numbers, names, OTPs, or payment IDs in analytics events.
 Versioned backend files are in:
 
 - `supabase/migrations/`
-- `supabase/functions/razorpay-create-order-v2`
-- `supabase/functions/razorpay-verify-payment-v2`
+- `supabase/functions/razorpay-create-order`
+- `supabase/functions/razorpay-verify-payment`
 - `supabase/functions/place-autocomplete`
 
 Before production deployment, apply the migrations to the target Supabase project and deploy the Edge Functions.
+
+Payment requests are routed through same-origin Vercel routes first:
+
+- `/api/payments/create-order`
+- `/api/payments/verify`
+
+Those routes proxy to the Supabase Razorpay Edge Functions server-to-server, avoiding browser CORS issues on custom domains.
 
 Razorpay secrets belong in Supabase Edge Function secrets:
 
