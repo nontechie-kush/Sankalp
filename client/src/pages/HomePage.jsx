@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import { RITUALS, getDeliveryDate } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
 import StoryAnimation from '../components/StoryAnimation';
+import { trackEvent } from '../lib/analytics';
 
 const FAQS = [
   { q: 'So, how does this actually work?', a: 'You choose your moment, we find a verified pandit and schedule the ritual at an auspicious muhurat. You receive a confirmation when the ritual is done.' },
@@ -374,9 +375,19 @@ export default function HomePage() {
   const [openFaq, setOpenFaq] = useState(null);
 
   function handleMomentSelect(ritualId, moment) {
+    const ritual = RITUALS.find(r => r.id === ritualId);
+    trackEvent('moment_selected', {
+      source: 'home_browse_by_moment',
+      ritual_id: ritualId,
+      ritual_name: ritual?.name,
+      moment_id: moment.id,
+      moment_name: moment.name,
+      value: moment.price,
+      currency: 'INR',
+    });
     update({
       ritualId,
-      ritualName: RITUALS.find(r => r.id === ritualId)?.name || '',
+      ritualName: ritual?.name || '',
       momentId: moment.id,
       momentName: moment.name,
       price: moment.price,
@@ -397,7 +408,7 @@ export default function HomePage() {
             <h1 className="hero-title">Because some moments deserve more than luck.</h1>
             <p className="hero-sub">Trusted rituals performed in your name by verified pandits. Video confirmation included.</p>
             <div className="hero-cta-row">
-              <a href="#browse" className="btn-primary">Find the right ritual for your situation</a>
+              <a href="#browse" className="btn-primary" onClick={() => trackEvent('hero_cta_clicked', { destination: 'browse' })}>Find the right ritual for your situation</a>
             </div>
           </div>
         </div>
@@ -409,7 +420,20 @@ export default function HomePage() {
             <h2 className="section-title">Rituals for moments that matter</h2>
             <div className="ritual-grid">
               {RITUALS.map(r => (
-                <RitualBannerCard key={r.id} ritual={r} onClick={() => navigate(`/ritual/${r.id}`)} />
+                <RitualBannerCard
+                  key={r.id}
+                  ritual={r}
+                  onClick={() => {
+                    trackEvent('ritual_card_clicked', {
+                      source: 'featured_services',
+                      ritual_id: r.id,
+                      ritual_name: r.name,
+                      from_price: r.from,
+                      currency: 'INR',
+                    });
+                    navigate(`/ritual/${r.id}`);
+                  }}
+                />
               ))}
             </div>
           </div>

@@ -9,6 +9,7 @@ const RITUAL_ICONS = {
 import Navbar from '../components/Navbar';
 import { RITUALS } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
+import { trackEvent } from '../lib/analytics';
 
 const RITUAL_DETAIL_COPY = {
   rk: {
@@ -167,6 +168,16 @@ export default function RitualPage() {
 
   function pickMoment(moment) {
     const fulfilment = getFulfilmentPreview();
+    trackEvent('moment_selected', {
+      source: 'ritual_category_page',
+      ritual_id: ritual.id,
+      ritual_name: ritual.name,
+      moment_id: moment.id,
+      moment_name: moment.name,
+      value: moment.price,
+      currency: 'INR',
+      delivery_window_hours: fulfilment.hours,
+    });
     update({
       ritualId: ritual.id,
       ritualName: ritual.name,
@@ -184,6 +195,15 @@ export default function RitualPage() {
 
   function continueBooking() {
     if (!selectedMoment) return;
+    trackEvent('booking_flow_started', {
+      ritual_id: ritual.id,
+      ritual_name: ritual.name,
+      moment_id: selectedMoment.id,
+      moment_name: selectedMoment.name,
+      value: selectedMoment.price,
+      currency: 'INR',
+      delivery_window_hours: fulfilment.hours,
+    });
     update({
       ritualId: ritual.id,
       ritualName: ritual.name,

@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import { api } from '../lib/api';
 import { setStoredUser, setToken, tokenPayload } from '../lib/auth';
 import { useBooking } from '../context/BookingContext';
+import { bookingEventParams, trackEvent } from '../lib/analytics';
 
 function StepBar({ onBack }) {
   return (
@@ -66,10 +67,16 @@ export default function CheckoutVerifyPage() {
 
   async function sendOtp() {
     if (!phoneIsValid(phone)) { setError('Enter a valid phone number with country code'); return; }
+    trackEvent('otp_send_started', bookingEventParams(booking));
     setLoading(true); setError('');
     const d = await api.sendOtp(phone);
     setLoading(false);
-    if (!d.success) { setError(d.error || 'Failed to send OTP'); return; }
+    if (!d.success) {
+      trackEvent('otp_send_failed', bookingEventParams(booking));
+      setError(d.error || 'Failed to send OTP');
+      return;
+    }
+    trackEvent('otp_sent', bookingEventParams(booking));
     setNormalizedPhone(d.phone);
     setPhase('otp');
     startTimer();
@@ -79,10 +86,21 @@ export default function CheckoutVerifyPage() {
   async function verifyOtp() {
     const code = otp.join('');
     if (code.length !== 6) { setError('Enter all 6 digits'); return; }
+    trackEvent('otp_verify_started', bookingEventParams(booking));
     setLoading(true); setError('');
     const d = await api.verifyOtp(normalizedPhone, code);
     setLoading(false);
-    if (!d.success) { setError(d.error || 'Invalid OTP'); setOtp(['','','','','','']); boxRefs.current[0]?.focus(); return; }
+    if (!d.success) {
+      trackEvent('otp_verify_failed', bookingEventParams(booking));
+      setError(d.error || 'Invalid OTP');
+      setOtp(['','','','','','']);
+      boxRefs.current[0]?.focus();
+      return;
+    }
+    trackEvent('otp_verified', {
+      ...bookingEventParams(booking),
+      user_type: d.isNew ? 'new' : 'returning',
+    });
     setToken(d.token);
     setStoredUser(d.user);
     update({ phone: d.user.phone, userName: d.user.name || '' });

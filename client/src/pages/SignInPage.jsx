@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { api } from '../lib/api';
 import { setStoredUser, setToken, tokenPayload } from '../lib/auth';
+import { trackEvent } from '../lib/analytics';
 
 export default function SignInPage() {
   const navigate = useNavigate();
@@ -39,10 +40,16 @@ export default function SignInPage() {
 
   async function sendOtp() {
     if (!phoneIsValid(phone)) { setError('Enter a valid phone number with country code'); return; }
+    trackEvent('signin_otp_send_started');
     setLoading(true); setError('');
     const d = await api.sendOtp(phone);
     setLoading(false);
-    if (!d.success) { setError(d.error || 'Failed to send OTP'); return; }
+    if (!d.success) {
+      trackEvent('signin_otp_send_failed');
+      setError(d.error || 'Failed to send OTP');
+      return;
+    }
+    trackEvent('signin_otp_sent');
     setNormalizedPhone(d.phone);
     setPhase('otp');
     startTimer();
@@ -52,10 +59,18 @@ export default function SignInPage() {
   async function verifyOtp() {
     const code = otp.join('');
     if (code.length !== 6) { setError('Enter all 6 digits'); return; }
+    trackEvent('signin_otp_verify_started');
     setLoading(true); setError('');
     const d = await api.verifyOtp(normalizedPhone, code);
     setLoading(false);
-    if (!d.success) { setError(d.error || 'Invalid OTP'); setOtp(['','','','','','']); boxRefs.current[0]?.focus(); return; }
+    if (!d.success) {
+      trackEvent('signin_otp_verify_failed');
+      setError(d.error || 'Invalid OTP');
+      setOtp(['','','','','','']);
+      boxRefs.current[0]?.focus();
+      return;
+    }
+    trackEvent('signin_otp_verified', { user_type: d.isNew ? 'new' : 'returning' });
     setToken(d.token);
     setStoredUser(d.user);
     if (d.isNew) setPhase('profile');
@@ -64,10 +79,16 @@ export default function SignInPage() {
 
   async function saveProfile() {
     if (name.trim().length < 2) { setError('Enter your full name'); return; }
+    trackEvent('signin_profile_save_started');
     setLoading(true); setError('');
     const d = await api.saveProfile(name.trim(), gotra.trim());
     setLoading(false);
-    if (!d.success) { setError(d.error || 'Could not save. Try again.'); return; }
+    if (!d.success) {
+      trackEvent('signin_profile_save_failed');
+      setError(d.error || 'Could not save. Try again.');
+      return;
+    }
+    trackEvent('signin_profile_saved', { gotra_provided: Boolean(gotra.trim()) });
     if (d.user) setStoredUser(d.user);
     navigate('/bookings');
   }

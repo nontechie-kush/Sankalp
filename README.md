@@ -29,9 +29,30 @@ Use publishable Supabase values only:
 ```bash
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_or_anon_key
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX # optional GA4 analytics
 ```
 
 The current client also contains a fallback to the known Sankalp Supabase project so local smoke tests work without env vars.
+
+## Analytics
+
+GA4 is wired through `VITE_GA_MEASUREMENT_ID`. If this env var is not set, the app still pushes events to `window.dataLayer` but does not load Google Analytics.
+
+Tracked events include:
+
+- `page_view`
+- `hero_cta_clicked`
+- `ritual_card_clicked`
+- `moment_selected`
+- `booking_flow_started`
+- `checkout_slot_selected`
+- `otp_sent`, `otp_verified`, and failure variants
+- standalone sign-in OTP/profile events
+- `booking_created`
+- `payment_checkout_opened`, `payment_success`, and failure/dismiss variants
+- `booking_confirmed_viewed`
+
+Do not send phone numbers, names, OTPs, or payment IDs in analytics events.
 
 ## Supabase backend
 

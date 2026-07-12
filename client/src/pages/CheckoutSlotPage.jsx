@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useBooking } from '../context/BookingContext';
+import { bookingEventParams, trackEvent } from '../lib/analytics';
 
 
 function Calendar({ selectedDate, onSelect }) {
@@ -96,6 +97,10 @@ export default function CheckoutSlotPage() {
   function handleContinue() {
     if (!selectedDate) return;
     const dateLabel = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+    trackEvent('checkout_slot_selected', {
+      ...bookingEventParams(booking),
+      slot_date_selected: true,
+    });
     update({
       slotDate: selectedDate,
       slotLabel: dateLabel,

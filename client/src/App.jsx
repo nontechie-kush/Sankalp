@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { BookingProvider } from './context/BookingContext';
+import { trackPageView } from './lib/analytics';
 import './styles/globals.css';
 
 import HomePage from './pages/HomePage';
@@ -36,11 +37,22 @@ function ScrollToTop() {
   return null;
 }
 
+function AnalyticsPageView() {
+  const location = useLocation();
+
+  useEffect(() => {
+    trackPageView(`${location.pathname}${location.search}`);
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <BookingProvider>
         <ScrollToTop />
+        <AnalyticsPageView />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/signin" element={<SignInPage />} />

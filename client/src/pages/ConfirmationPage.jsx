@@ -1,11 +1,20 @@
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useBooking } from '../context/BookingContext';
+import { bookingEventParams, trackEvent } from '../lib/analytics';
 
 export default function ConfirmationPage() {
   const { ref } = useParams();
   const navigate = useNavigate();
   const { booking, reset } = useBooking();
+
+  useEffect(() => {
+    trackEvent('booking_confirmed_viewed', {
+      ...bookingEventParams(booking),
+      has_booking_ref: Boolean(ref),
+    });
+  }, [booking, ref]);
 
   return (
     <div className="page-wrap">
