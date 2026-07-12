@@ -620,11 +620,11 @@ function Scene5() {
 }
 
 const SCENES = [
-  { id: 'low',    label: 'Feeling low',      subtitle: 'Feeling anxious before something that matters...', bg: '#0C1420', Scene: Scene1 },
-  { id: 'app',    label: 'Opens Sankalp',    subtitle: 'Opens Sankalp — finds the right ritual instantly', bg: '#7A2C08', Scene: Scene2 },
-  { id: 'book',   label: 'Books ritual',     subtitle: 'Books the ritual — confirmed in under a minute', bg: '#FFF0D4', Scene: Scene3 },
-  { id: 'ritual', label: 'Pandit performs',  subtitle: 'Verified pandit performs the Sankalp in your name', bg: '#0E0600', Scene: Scene4 },
-  { id: 'cert',   label: 'Gets certificate', subtitle: 'Certificate & video proof — delivered to WhatsApp', bg: '#FFFBEE', Scene: Scene5 },
+  { id: 'low',    label: 'Life moment',      subtitle: 'Before a big moment, you want more than luck.', bg: '#0C1420', Scene: Scene1 },
+  { id: 'app',    label: 'Choose ritual',    subtitle: 'Choose what you are facing — we suggest the right ritual.', bg: '#7A2C08', Scene: Scene2 },
+  { id: 'book',   label: 'Book Sankalp',     subtitle: 'Book in under a minute. We handle the pandit and timing.', bg: '#FFF0D4', Scene: Scene3 },
+  { id: 'ritual', label: 'Pandit performs',  subtitle: 'A verified pandit performs the Sankalp in your name.', bg: '#0E0600', Scene: Scene4 },
+  { id: 'cert',   label: 'Video proof',      subtitle: 'You receive video proof and confirmation on WhatsApp.', bg: '#FFFBEE', Scene: Scene5 },
 ];
 
 export default function StoryAnimation() {
