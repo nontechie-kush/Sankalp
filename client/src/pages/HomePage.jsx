@@ -12,12 +12,18 @@ const FAQS = [
 ];
 
 const FEED_ITEMS = [
-  { av: 'R', color: '#FAD7C0', text: 'Riya cleared her nazar', loc: 'Haldwani' },
-  { av: 'V', color: '#F5D9CC', text: 'Vikram booked Raksha Kavach', loc: 'Jaipur' },
-  { av: 'S', color: '#FADDC0', text: 'Sneha called in Dhan Aagman', loc: 'Pune' },
-  { av: 'A', color: '#F5E5D0', text: 'Aman booked Prem Setu', loc: 'Lucknow' },
-  { av: 'P', color: '#F0D5CC', text: 'Priya booked Raksha Kavach', loc: 'Mumbai' },
-  { av: 'K', color: '#FADCC0', text: 'Karan cleared his nazar', loc: 'Delhi' },
+  { av: 'R', color: '#FAD7C0', name: 'Riya', ritual: 'Nazar Badha', loc: 'Haldwani', meta: 'video delivered' },
+  { av: 'V', color: '#F5D9CC', name: 'Vikram', ritual: 'Raksha Kavach', loc: 'Jaipur', meta: 'pandit assigned' },
+  { av: 'S', color: '#FADDC0', name: 'Sneha', ritual: 'Dhan Aagman', loc: 'Pune', meta: 'booking verified' },
+  { av: 'A', color: '#F5E5D0', name: 'Aman', ritual: 'Prem Setu', loc: 'Lucknow', meta: 'ritual completed' },
+  { av: 'P', color: '#F0D5CC', name: 'Priya', ritual: 'Raksha Kavach', loc: 'Mumbai', meta: 'status updated' },
+  { av: 'K', color: '#FADCC0', name: 'Karan', ritual: 'Nazar Badha', loc: 'Delhi', meta: 'booking verified' },
+];
+
+const TRUST_POINTS = [
+  { label: 'OTP verified bookings', icon: 'shield' },
+  { label: 'Secure Razorpay checkout', icon: 'lock' },
+  { label: 'Ritual status updates', icon: 'check' },
 ];
 
 const REELS = [
@@ -80,15 +86,36 @@ function BookingFeed() {
   }, []);
   const item = FEED_ITEMS[idx];
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 100, padding: '8px 16px 8px 10px', width: '100%' }}>
-      <div style={{ width: 28, height: 28, borderRadius: '50%', background: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, color: '#5C3A1E', flexShrink: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,.72)', border: '1px solid rgba(190,106,67,.18)', borderRadius: 18, padding: '12px 14px', width: '100%', boxShadow: '0 10px 24px rgba(92,58,30,.06)' }}>
+      <div style={{ width: 38, height: 38, borderRadius: '50%', background: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, color: '#5C3A1E', flexShrink: 0, border: '2px solid #fff' }}>
         {item.av}
       </div>
-      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        <strong style={{ color: 'var(--text)' }}>{item.text}</strong>
-        <span style={{ color: 'var(--text-3)' }}> · {item.loc}</span>
-      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {item.name} booked {item.ritual}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span>{item.loc}</span>
+          <span>•</span>
+          <span style={{ color: '#5C8A57', fontWeight: 700 }}>{item.meta}</span>
+        </div>
+      </div>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#5C8A57', boxShadow: '0 0 0 4px rgba(92,138,87,.12)', flexShrink: 0 }} />
     </div>
+  );
+}
+
+function TrustIcon({ type }) {
+  const paths = {
+    shield: <path d="M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Z" />,
+    lock: <><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>,
+    check: <><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.2 2.2 4.8-5" /></>,
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+      {paths[type]}
+    </svg>
   );
 }
 
@@ -369,11 +396,52 @@ export default function HomePage() {
         {/* People like you — social proof */}
         <div className="container">
           <div className="section">
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: 6 }}>You're in good company</p>
-              <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>14,000+ have done this</p>
+            <div style={{ background: 'linear-gradient(160deg, #FFFDF8 0%, #F5EDE0 100%)', border: '1px solid rgba(190,106,67,.18)', borderRadius: 'var(--radius)', padding: '22px 20px', boxShadow: '0 18px 45px rgba(92,58,30,.08)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', right: -28, top: -34, width: 120, height: 120, borderRadius: '50%', background: 'rgba(190,106,67,.08)' }} />
+              <div style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: 6 }}>You're in good company</p>
+                    <h2 style={{ fontSize: 24, lineHeight: 1.12, fontWeight: 800, color: 'var(--text)', marginBottom: 8, letterSpacing: '-.02em' }}>Booked by people in the same moments.</h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.5, maxWidth: 360 }}>Every booking is phone verified, paid securely, and tracked until the ritual update comes back to you.</p>
+                  </div>
+                  <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                      {FEED_ITEMS.slice(0, 4).map((item, index) => (
+                        <div key={item.name} style={{ width: 30, height: 30, borderRadius: '50%', background: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#5C3A1E', border: '2px solid #fff', marginLeft: index === 0 ? 0 : -8, boxShadow: '0 4px 10px rgba(92,58,30,.08)' }}>
+                          {item.av}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)' }}>14,000+</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 700 }}>ritual moments</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
+                  {TRUST_POINTS.map((point) => (
+                    <div key={point.label} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12, color: 'var(--text-2)', fontWeight: 700 }}>
+                      <span style={{ width: 28, height: 28, borderRadius: 10, background: '#fff', border: '1px solid rgba(190,106,67,.16)', color: '#5C8A57', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <TrustIcon type={point.icon} />
+                      </span>
+                      {point.label}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Recent verified booking</div>
               <BookingFeed />
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* How it works */}
+        <div className="container">
+          <div className="section">
+            <p className="section-label">How it works</p>
+            <h2 className="section-title">Five steps that loop right back to you.</h2>
+            <StoryAnimation />
           </div>
         </div>
 
@@ -405,15 +473,6 @@ export default function HomePage() {
             <p className="section-label">Browse by moment</p>
             <h2 className="section-title">What is happening right now?</h2>
             <BrowseByMoment onSelect={handleMomentSelect} />
-          </div>
-        </div>
-
-        {/* How it works */}
-        <div className="container">
-          <div className="section">
-            <p className="section-label">How it works</p>
-            <h2 className="section-title">Five steps that loop right back to you.</h2>
-            <StoryAnimation />
           </div>
         </div>
 
