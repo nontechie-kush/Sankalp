@@ -620,11 +620,11 @@ function Scene5() {
 }
 
 const SCENES = [
-  { id: 'low',    label: 'Feeling low',      bg: '#0C1420', Scene: Scene1 },
-  { id: 'app',    label: 'Opens Sankalp',    bg: '#7A2C08', Scene: Scene2 },
-  { id: 'book',   label: 'Books ritual',     bg: '#FFF0D4', Scene: Scene3 },
-  { id: 'ritual', label: 'Pandit performs',  bg: '#0E0600', Scene: Scene4 },
-  { id: 'cert',   label: 'Gets certificate', bg: '#FFFBEE', Scene: Scene5 },
+  { id: 'low',    label: 'Feeling low',      subtitle: 'Feeling anxious before something that matters...', bg: '#0C1420', Scene: Scene1 },
+  { id: 'app',    label: 'Opens Sankalp',    subtitle: 'Opens Sankalp — finds the right ritual instantly', bg: '#7A2C08', Scene: Scene2 },
+  { id: 'book',   label: 'Books ritual',     subtitle: 'Books the ritual — confirmed in under a minute', bg: '#FFF0D4', Scene: Scene3 },
+  { id: 'ritual', label: 'Pandit performs',  subtitle: 'Verified pandit performs the Sankalp in your name', bg: '#0E0600', Scene: Scene4 },
+  { id: 'cert',   label: 'Gets certificate', subtitle: 'Certificate & video proof — delivered to WhatsApp', bg: '#FFFBEE', Scene: Scene5 },
 ];
 
 export default function StoryAnimation() {
@@ -645,7 +645,7 @@ export default function StoryAnimation() {
 
   function goTo(i) { setScene(i); if (playing) startTimer(); }
 
-  const { Scene: ActiveScene, bg, label } = SCENES[scene];
+  const { Scene: ActiveScene, bg, label, subtitle } = SCENES[scene];
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
@@ -709,8 +709,28 @@ export default function StoryAnimation() {
         </button>
       </div>
 
-      {/* Dot nav + label */}
+      {/* Caption + dot nav */}
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, marginTop:10 }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${scene}-subtitle`}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              minHeight: 34,
+              padding: '0 10px',
+              textAlign: 'center',
+              fontSize: 13,
+              lineHeight: 1.35,
+              fontWeight: 700,
+              color: 'var(--text-2)',
+            }}
+          >
+            {subtitle}
+          </motion.div>
+        </AnimatePresence>
         <div style={{ display:'flex', gap:7, alignItems:'center' }}>
           {SCENES.map((_,i) => (
             <button key={i} onClick={() => goTo(i)} style={{
