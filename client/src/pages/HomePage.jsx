@@ -111,7 +111,7 @@ function BookingFeed() {
       <AvatarCircle item={item} size={32} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {item.name} completed {item.ritual}
+          {item.name} booked {item.ritual}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1, fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           <span style={{ color: '#5C8A57', fontWeight: 700 }}>{item.meta}</span>
@@ -421,8 +421,7 @@ export default function HomePage() {
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'center', marginBottom: 14 }}>
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: 6 }}>Trusted by 14,000+ families</p>
-                  <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>14,000+ rituals completed</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>14,000+ rituals booked</p>
                   <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>Every booking is verified, securely processed, and tracked until the ritual is complete.</p>
                 </div>
                 <div style={{ display: 'flex', flexShrink: 0 }}>
