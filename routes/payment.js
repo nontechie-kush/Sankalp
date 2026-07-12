@@ -15,9 +15,9 @@ router.post('/create-order', authMiddleware, async (req, res) => {
   if (!amountPaise) return res.status(400).json({ success: false, error: 'Amount required' });
 
   if (!razorpay) {
-    return res.json({
-      success: true,
-      order: { id: 'order_dev_' + Date.now(), amount: amountPaise, currency: 'INR', key: 'rzp_test_placeholder' },
+    return res.status(503).json({
+      success: false,
+      error: 'Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.',
     });
   }
 
