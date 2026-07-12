@@ -45,7 +45,7 @@ export const RITUALS = [
     desc: 'Bless new beginnings with a verified pandit, clear preparation steps, and status tracking.',
     color: '#F2D58A',
     bg: 'linear-gradient(135deg, #FAF3DC 0%, #EDD98A 100%)',
-    rating: '4.8', count: '4,120', from: 149,
+    rating: '4.6', count: '4,120', from: 149,
     why: 'Before a money moment, Dhan Aagman invites the blessings of Lakshmi and Kuber — clearing blocks around wealth and opening the path for prosperity to flow in.',
     how: 'A pandit performs Lakshmi-Kuber puja in your name with kalash sthapana, mantra japa and aarti at a prosperous muhurat.',
     groups: [
@@ -77,7 +77,7 @@ export const RITUALS = [
     desc: 'A pandit performs Prem Setu to strengthen a bond or give you the nerve to say it.',
     color: '#F2B79A',
     bg: 'linear-gradient(135deg, #FAE8DC 0%, #E8A87A 100%)',
-    rating: '4.9', count: '3,540', from: 149,
+    rating: '4.8', count: '3,540', from: 149,
     why: 'Prem Setu strengthens the bond between two hearts — softening distance, healing misunderstandings, and bringing the courage to express what you feel.',
     how: 'A pandit invokes the blessings of love and harmony in your name, with mantra and offerings dedicated to your intention at an auspicious time.',
     groups: [
@@ -109,7 +109,7 @@ export const RITUALS = [
     desc: 'A pandit performs Nazar Badha to clear the evil eye and help your luck get back on track.',
     color: '#CBD5F5',
     bg: 'linear-gradient(135deg, #E8EDFF 0%, #A0B0E8 100%)',
-    rating: '4.9', count: '6,820', from: 149,
+    rating: '4.4', count: '6,820', from: 149,
     why: 'When luck turns or things feel heavy, Nazar Badha clears the evil eye and negative energy that can follow good fortune — resetting your path.',
     how: 'A pandit performs the nazar utaarna vidhi in your name with the traditional remedies and mantras, dispelling drishti dosha at the right muhurat.',
     groups: [

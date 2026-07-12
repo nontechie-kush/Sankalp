@@ -135,22 +135,16 @@ function BulletList({ items }) {
   );
 }
 
-function StepBar({ step, total, title, onBack }) {
+function DetailBack({ onBack }) {
   return (
-    <div>
-      <div className="step-bar" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <button className="step-bar-back" onClick={onBack}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Back
-        </button>
-        <span className="step-label">{title}</span>
-        <span className="step-count">{step}/{total}</span>
-      </div>
-      <div className="progress-bar" style={{ marginBottom: 28 }}>
-        {Array.from({ length: total }).map((_, i) => <span key={i} className={i < step ? 'active' : ''} />)}
-      </div>
-      <p className="step-meta">Step {step} of {total}</p>
-    </div>
+    <button
+      className="step-bar-back"
+      onClick={onBack}
+      style={{ marginBottom: 18, padding: '4px 0' }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back
+    </button>
   );
 }
 
@@ -207,7 +201,7 @@ export default function RitualPage() {
       <Navbar />
       <main style={{ flex: 1, paddingTop: 24, paddingBottom: 100 }}>
         <div className="checkout-wrap">
-          <StepBar step={1} total={4} title="Ritual details" onBack={() => navigate('/')} />
+          <DetailBack onBack={() => navigate('/')} />
 
           {selectedMoment && (
             <>

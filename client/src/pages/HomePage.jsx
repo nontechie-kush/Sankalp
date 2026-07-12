@@ -12,13 +12,32 @@ const FAQS = [
   { q: 'Can I use a number from outside India?', a: 'Yes. We verify via OTP — any mobile number that can receive SMS works. The booking is performed by a pandit in India on your behalf.' },
 ];
 
+function avatarImage({ bg, skin, hair, shirt, accent = '#BE6A43', bindi = false, beard = false }) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="48" fill="${bg}"/>
+      <path d="M25 89c4-20 14-31 23-31s19 11 23 31" fill="${shirt}"/>
+      <circle cx="48" cy="42" r="20" fill="${skin}"/>
+      <path d="M27 42c1-19 11-29 25-29 12 0 22 9 23 26-10-11-26-14-48 3Z" fill="${hair}"/>
+      <path d="M28 46c-4-13 2-28 18-33 9-3 22 1 28 14-13-5-32-2-46 19Z" fill="${hair}" opacity=".92"/>
+      <circle cx="40" cy="43" r="2.2" fill="#2C2620"/>
+      <circle cx="56" cy="43" r="2.2" fill="#2C2620"/>
+      <path d="M40 56c5 4 11 4 16 0" fill="none" stroke="#7A3A2A" stroke-width="2.2" stroke-linecap="round"/>
+      ${bindi ? `<circle cx="48" cy="35" r="2" fill="${accent}"/>` : ''}
+      ${beard ? `<path d="M34 53c5 12 23 12 28 0 0 17-28 17-28 0Z" fill="${hair}" opacity=".85"/>` : ''}
+      <path d="M29 69c11 10 27 10 38 0" fill="none" stroke="${accent}" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+    </svg>
+  `;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 const FEED_ITEMS = [
-  { av: 'R', color: '#FAD7C0', photo: 'https://i.pravatar.cc/80?img=47', name: 'Riya', ritual: 'Nazar Badha', loc: 'Haldwani', meta: 'video delivered' },
-  { av: 'V', color: '#F5D9CC', photo: 'https://i.pravatar.cc/80?img=12', name: 'Vikram', ritual: 'Raksha Kavach', loc: 'Jaipur', meta: 'pandit assigned' },
-  { av: 'S', color: '#FADDC0', photo: 'https://i.pravatar.cc/80?img=32', name: 'Sneha', ritual: 'Dhan Aagman', loc: 'Pune', meta: 'booking verified' },
-  { av: 'A', color: '#F5E5D0', photo: 'https://i.pravatar.cc/80?img=15', name: 'Aman', ritual: 'Prem Setu', loc: 'Lucknow', meta: 'ritual completed' },
-  { av: 'P', color: '#F0D5CC', photo: 'https://i.pravatar.cc/80?img=44', name: 'Priya', ritual: 'Raksha Kavach', loc: 'Mumbai', meta: 'status updated' },
-  { av: 'K', color: '#FADCC0', photo: 'https://i.pravatar.cc/80?img=11', name: 'Karan', ritual: 'Nazar Badha', loc: 'Delhi', meta: 'booking verified' },
+  { av: 'R', color: '#FAD7C0', photo: avatarImage({ bg: '#FAD7C0', skin: '#B8754E', hair: '#241511', shirt: '#F4A261', bindi: true }), name: 'Riya', ritual: 'Nazar Badha', loc: 'Haldwani', meta: 'video delivered' },
+  { av: 'V', color: '#F5D9CC', photo: avatarImage({ bg: '#F5D9CC', skin: '#A9653E', hair: '#17100D', shirt: '#5A6C8A', beard: true }), name: 'Vikram', ritual: 'Raksha Kavach', loc: 'Jaipur', meta: 'pandit assigned' },
+  { av: 'S', color: '#FADDC0', photo: avatarImage({ bg: '#FADDC0', skin: '#C98255', hair: '#21120E', shirt: '#A65F46', bindi: true }), name: 'Sneha', ritual: 'Dhan Aagman', loc: 'Pune', meta: 'booking verified' },
+  { av: 'A', color: '#F5E5D0', photo: avatarImage({ bg: '#F5E5D0', skin: '#B66F45', hair: '#1B120F', shirt: '#2F6F62', beard: true }), name: 'Aman', ritual: 'Prem Setu', loc: 'Lucknow', meta: 'ritual completed' },
+  { av: 'P', color: '#F0D5CC', photo: avatarImage({ bg: '#F0D5CC', skin: '#A85F3D', hair: '#160D0B', shirt: '#C06C84', bindi: true }), name: 'Priya', ritual: 'Raksha Kavach', loc: 'Mumbai', meta: 'status updated' },
+  { av: 'K', color: '#FADCC0', photo: avatarImage({ bg: '#FADCC0', skin: '#BC7448', hair: '#1A100D', shirt: '#355C7D', beard: true }), name: 'Karan', ritual: 'Nazar Badha', loc: 'Delhi', meta: 'booking verified' },
 ];
 
 const TRUST_POINTS = [
@@ -374,9 +393,9 @@ export default function HomePage() {
         {/* Hero */}
         <div className="container">
           <div className="hero">
-            <h1 className="hero-title">Choose the moment.<br />We handle the ritual.</h1>
+            <h1 className="hero-title">Don’t just touch wood.<br />Critical life moments need more.</h1>
             <div className="hero-cta-row">
-              <span className="hero-note">Verified pandits · Starts at ₹149 · video in 12–24 hours</span>
+              <span className="hero-note">Verified pandits perform rituals to help you feel stronger · starts at ₹149 · video in 12–24 hours</span>
             </div>
           </div>
         </div>
