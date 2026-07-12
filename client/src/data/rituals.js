@@ -4,7 +4,7 @@ export const RITUALS = [
     name: 'Raksha Kavach',
     tag: 'RAKSHA KAVACH',
     tagline: 'Big exam or interview coming up?',
-    desc: 'A verified pandit performs Raksha Kavach in your name, so you walk in calm and shielded.',
+    desc: 'A verified pandit performs the Raksha Kavach in your name with video confirmation — so you can focus on giving your best.',
     color: '#F0C189',
     bg: 'linear-gradient(135deg, #F5EDE0 0%, #E8D5B5 100%)',
     rating: '4.9', count: '6,210', from: 149,

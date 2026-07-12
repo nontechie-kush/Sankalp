@@ -32,18 +32,19 @@ function avatarImage({ bg, skin, hair, shirt, accent = '#BE6A43', bindi = false,
 }
 
 const FEED_ITEMS = [
-  { av: 'R', color: '#FAD7C0', photo: avatarImage({ bg: '#FAD7C0', skin: '#B8754E', hair: '#241511', shirt: '#F4A261', bindi: true }), name: 'Riya', ritual: 'Nazar Badha', loc: 'Haldwani', meta: 'video delivered' },
-  { av: 'V', color: '#F5D9CC', photo: avatarImage({ bg: '#F5D9CC', skin: '#A9653E', hair: '#17100D', shirt: '#5A6C8A', beard: true }), name: 'Vikram', ritual: 'Raksha Kavach', loc: 'Jaipur', meta: 'pandit assigned' },
-  { av: 'S', color: '#FADDC0', photo: avatarImage({ bg: '#FADDC0', skin: '#C98255', hair: '#21120E', shirt: '#A65F46', bindi: true }), name: 'Sneha', ritual: 'Dhan Aagman', loc: 'Pune', meta: 'booking verified' },
-  { av: 'A', color: '#F5E5D0', photo: avatarImage({ bg: '#F5E5D0', skin: '#B66F45', hair: '#1B120F', shirt: '#2F6F62', beard: true }), name: 'Aman', ritual: 'Prem Setu', loc: 'Lucknow', meta: 'ritual completed' },
-  { av: 'P', color: '#F0D5CC', photo: avatarImage({ bg: '#F0D5CC', skin: '#A85F3D', hair: '#160D0B', shirt: '#C06C84', bindi: true }), name: 'Priya', ritual: 'Raksha Kavach', loc: 'Mumbai', meta: 'status updated' },
-  { av: 'K', color: '#FADCC0', photo: avatarImage({ bg: '#FADCC0', skin: '#BC7448', hair: '#1A100D', shirt: '#355C7D', beard: true }), name: 'Karan', ritual: 'Nazar Badha', loc: 'Delhi', meta: 'booking verified' },
+  { av: 'R', color: '#FAD7C0', photo: avatarImage({ bg: '#FAD7C0', skin: '#B8754E', hair: '#241511', shirt: '#F4A261', bindi: true }), name: 'Riya', ritual: 'Nazar Badha', loc: 'Haldwani', meta: 'Video delivered' },
+  { av: 'V', color: '#F5D9CC', photo: avatarImage({ bg: '#F5D9CC', skin: '#A9653E', hair: '#17100D', shirt: '#5A6C8A', beard: true }), name: 'Vikram', ritual: 'Raksha Kavach', loc: 'Jaipur', meta: 'Video proof ready' },
+  { av: 'S', color: '#FADDC0', photo: avatarImage({ bg: '#FADDC0', skin: '#C98255', hair: '#21120E', shirt: '#A65F46', bindi: true }), name: 'Sneha', ritual: 'Dhan Aagman', loc: 'Pune', meta: 'Ritual completed' },
+  { av: 'A', color: '#F5E5D0', photo: avatarImage({ bg: '#F5E5D0', skin: '#B66F45', hair: '#1B120F', shirt: '#2F6F62', beard: true }), name: 'Aman', ritual: 'Prem Setu', loc: 'Lucknow', meta: 'Video delivered' },
+  { av: 'P', color: '#F0D5CC', photo: avatarImage({ bg: '#F0D5CC', skin: '#A85F3D', hair: '#160D0B', shirt: '#C06C84', bindi: true }), name: 'Priya', ritual: 'Raksha Kavach', loc: 'Mumbai', meta: 'Video proof ready' },
+  { av: 'K', color: '#FADCC0', photo: avatarImage({ bg: '#FADCC0', skin: '#BC7448', hair: '#1A100D', shirt: '#355C7D', beard: true }), name: 'Karan', ritual: 'Nazar Badha', loc: 'Delhi', meta: 'Ritual completed' },
 ];
 
 const TRUST_POINTS = [
-  'OTP verified',
-  'Secure payment',
-  'Status tracked',
+  '✅ Verified pandits',
+  '🎥 Video proof',
+  '🔒 Secure payment',
+  '📍 Live status tracking',
 ];
 
 const REELS = [
@@ -110,12 +111,12 @@ function BookingFeed() {
       <AvatarCircle item={item} size={32} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {item.name} booked {item.ritual}
+          {item.name} completed {item.ritual}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1, fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          <span>{item.loc}</span>
-          <span>•</span>
           <span style={{ color: '#5C8A57', fontWeight: 700 }}>{item.meta}</span>
+          <span>•</span>
+          <span>{item.loc}</span>
         </div>
       </div>
       <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#5C8A57', boxShadow: '0 0 0 3px rgba(92,138,87,.12)', flexShrink: 0 }} />
@@ -155,7 +156,7 @@ function RitualBannerCard({ ritual, onClick }) {
           <span style={{ color: '#BE6A43', fontWeight: 700 }}>★ {ritual.rating}</span>
           <span style={{ color: 'var(--text-3)' }}>·</span>
           <span style={{ color: 'var(--text-3)' }}>{ritual.count} booked</span>
-          <span style={{ color: 'var(--text-3)', marginLeft: 'auto' }}>from ₹{ritual.from}</span>
+          <span style={{ color: 'var(--text-3)', marginLeft: 'auto' }}>Starting at ₹{ritual.from}/-</span>
         </div>
       </div>
     </div>
@@ -393,9 +394,10 @@ export default function HomePage() {
         {/* Hero */}
         <div className="container">
           <div className="hero">
-            <h1 className="hero-title">Don’t just touch wood.<br />Critical life moments need more.</h1>
+            <h1 className="hero-title">Because some moments deserve more than luck.</h1>
+            <p className="hero-sub">Trusted rituals performed in your name by verified pandits. Video confirmation included.</p>
             <div className="hero-cta-row">
-              <span className="hero-note">Verified pandits perform rituals to help you feel stronger · starts at ₹149 · video in 12–24 hours</span>
+              <a href="#browse" className="btn-primary">Find the right ritual for your situation</a>
             </div>
           </div>
         </div>
@@ -419,9 +421,9 @@ export default function HomePage() {
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'center', marginBottom: 14 }}>
                 <div>
-                  <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: 6 }}>You're in good company</p>
-                  <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>14,000+ ritual moments</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>Phone verified, paid securely, and tracked till completion.</p>
+                  <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: 6 }}>Trusted by 14,000+ families</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>14,000+ rituals completed</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>Every booking is verified, securely processed, and tracked until the ritual is complete.</p>
                 </div>
                 <div style={{ display: 'flex', flexShrink: 0 }}>
                   {FEED_ITEMS.slice(0, 4).map((item, index) => (
