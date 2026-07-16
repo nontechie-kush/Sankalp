@@ -193,10 +193,11 @@ export default function CheckoutVerifyPage() {
           {phase === 'phone' ? (
             <div>
               <div className="field">
-                <label className="field-label">Mobile number</label>
+                <label className="field-label" htmlFor="checkout-phone">Mobile number</label>
                 <div className="phone-row">
                   <div className="phone-cc">🌐</div>
                   <input
+                    id="checkout-phone"
                     className="phone-input"
                     type="tel"
                     inputMode="tel"

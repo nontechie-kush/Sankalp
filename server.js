@@ -25,6 +25,7 @@ app.use(helmet({
         'https://api.razorpay.com',
         'https://checkout.razorpay.com',
         'https://cdn.razorpay.com',
+        'https://lumberjack.razorpay.com',
       ],
       frameSrc:   ['https://api.razorpay.com', 'https://checkout.razorpay.com'],
     },

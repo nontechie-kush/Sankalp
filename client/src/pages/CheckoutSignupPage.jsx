@@ -86,8 +86,9 @@ export default function CheckoutSignupPage() {
           </div>
 
           <div className="field">
-            <label className="field-label">Your name <span style={{ color: 'var(--primary-light)' }}>*</span></label>
+            <label className="field-label" htmlFor="checkout-name">Your name <span style={{ color: 'var(--primary-light)' }}>*</span></label>
             <input
+              id="checkout-name"
               className="field-input"
               type="text"
               placeholder="e.g. Aarav Sharma"
@@ -101,10 +102,11 @@ export default function CheckoutSignupPage() {
           </div>
 
           <div className="field">
-            <label className="field-label">
+            <label className="field-label" htmlFor="checkout-gotra">
               Gotra <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(recommended)</span>
             </label>
             <input
+              id="checkout-gotra"
               className="field-input"
               type="text"
               placeholder="e.g. Kashyap"
@@ -115,10 +117,11 @@ export default function CheckoutSignupPage() {
           </div>
 
           <div className="field">
-            <label className="field-label">
+            <label className="field-label" htmlFor="checkout-location">
               Current city / location <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(recommended)</span>
             </label>
             <input
+              id="checkout-location"
               className="field-input"
               type="text"
               autoComplete="address-level2"

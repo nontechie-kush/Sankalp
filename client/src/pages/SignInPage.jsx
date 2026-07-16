@@ -150,10 +150,11 @@ export default function SignInPage() {
           {phase === 'phone' && (
             <div>
               <div className="field">
-                <label className="field-label">Mobile number</label>
+                <label className="field-label" htmlFor="signin-phone">Mobile number</label>
                 <div className="phone-row">
                   <div className="phone-cc">🌐</div>
                   <input
+                    id="signin-phone"
                     className="phone-input"
                     type="tel"
                     inputMode="tel"
@@ -205,18 +206,18 @@ export default function SignInPage() {
           {phase === 'profile' && (
             <div>
               <div className="field">
-                <label className="field-label">Your name <span style={{ color: 'var(--primary)' }}>*</span></label>
-                <input className="field-input" type="text" placeholder="e.g. Aarav Sharma" value={name} onChange={e => { setName(e.target.value); setError(''); }} onKeyDown={e => e.key === 'Enter' && saveProfile()} autoFocus />
+                <label className="field-label" htmlFor="signin-name">Your name <span style={{ color: 'var(--primary)' }}>*</span></label>
+                <input id="signin-name" className="field-input" type="text" placeholder="e.g. Aarav Sharma" value={name} onChange={e => { setName(e.target.value); setError(''); }} onKeyDown={e => e.key === 'Enter' && saveProfile()} autoFocus />
                 {error && <div className="field-error">{error}</div>}
               </div>
               <div className="field">
-                <label className="field-label">Gotra <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
-                <input className="field-input" type="text" placeholder="e.g. Kashyap" value={gotra} onChange={e => setGotra(e.target.value)} />
+                <label className="field-label" htmlFor="signin-gotra">Gotra <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
+                <input id="signin-gotra" className="field-input" type="text" placeholder="e.g. Kashyap" value={gotra} onChange={e => setGotra(e.target.value)} />
                 <div className="field-hint">The pandit will mention your gotra in the sankalp.</div>
               </div>
               <div className="field">
-                <label className="field-label">Current city / location <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(recommended)</span></label>
-                <input className="field-input" type="text" autoComplete="address-level2" placeholder="e.g. Gurugram, Delhi" value={place} onChange={e => setPlace(e.target.value)} />
+                <label className="field-label" htmlFor="signin-location">Current city / location <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(recommended)</span></label>
+                <input id="signin-location" className="field-input" type="text" autoComplete="address-level2" placeholder="e.g. Gurugram, Delhi" value={place} onChange={e => setPlace(e.target.value)} />
                 <div className="field-hint">This is used only for the ritual sankalp.</div>
               </div>
               <button className="btn-primary" style={{ width: '100%', padding: '14px' }} onClick={saveProfile} disabled={loading || name.trim().length < 2}>
