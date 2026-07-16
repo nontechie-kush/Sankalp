@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import { RITUALS, getDeliveryDate } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
-import StoryAnimation from '../components/StoryAnimation';
 import { trackEvent } from '../lib/analytics';
 import { applyBackendPrices, loadBackendPriceMap } from '../lib/catalogPrices';
 
@@ -14,319 +12,464 @@ const FAQS = [
   { q: 'Can I use a number from outside India?', a: 'Yes. We verify via OTP — any mobile number that can receive SMS works. The booking is performed by a pandit in India on your behalf.' },
 ];
 
-function avatarImage({ bg, skin, hair, shirt, accent = '#BE6A43', bindi = false, beard = false }) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
-      <rect width="96" height="96" rx="48" fill="${bg}"/>
-      <path d="M25 89c4-20 14-31 23-31s19 11 23 31" fill="${shirt}"/>
-      <circle cx="48" cy="42" r="20" fill="${skin}"/>
-      <path d="M27 42c1-19 11-29 25-29 12 0 22 9 23 26-10-11-26-14-48 3Z" fill="${hair}"/>
-      <path d="M28 46c-4-13 2-28 18-33 9-3 22 1 28 14-13-5-32-2-46 19Z" fill="${hair}" opacity=".92"/>
-      <circle cx="40" cy="43" r="2.2" fill="#2C2620"/>
-      <circle cx="56" cy="43" r="2.2" fill="#2C2620"/>
-      <path d="M40 56c5 4 11 4 16 0" fill="none" stroke="#7A3A2A" stroke-width="2.2" stroke-linecap="round"/>
-      ${bindi ? `<circle cx="48" cy="35" r="2" fill="${accent}"/>` : ''}
-      ${beard ? `<path d="M34 53c5 12 23 12 28 0 0 17-28 17-28 0Z" fill="${hair}" opacity=".85"/>` : ''}
-      <path d="M29 69c11 10 27 10 38 0" fill="none" stroke="${accent}" stroke-width="5" stroke-linecap="round" opacity=".7"/>
-    </svg>
-  `;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
+const RITUAL_META = {
+  nb: {
+    num: '01',
+    enName: 'Evil Eye Removal',
+    image: '/illustrations/nazar-badha.png',
+    tagline: 'Good run suddenly going off?',
+  },
+  rk: {
+    num: '02',
+    enName: 'Protection Shield',
+    image: '/illustrations/raksha-kavach.png',
+    tagline: 'Big exam or interview coming up?',
+  },
+  ps: {
+    num: '03',
+    enName: 'Love & Harmony',
+    image: '/illustrations/prem-setu.png',
+    tagline: 'Something you have been meaning to say?',
+  },
+  da: {
+    num: '04',
+    enName: 'Prosperity Blessing',
+    image: '/illustrations/dhan-aagman.png',
+    tagline: 'New home, shop, or vehicle?',
+  },
+};
 
-const FEED_ITEMS = [
-  { av: 'R', color: '#FAD7C0', photo: avatarImage({ bg: '#FAD7C0', skin: '#B8754E', hair: '#241511', shirt: '#F4A261', bindi: true }), name: 'Riya', ritual: 'Nazar Badha', loc: 'Haldwani', meta: 'Video delivered' },
-  { av: 'V', color: '#F5D9CC', photo: avatarImage({ bg: '#F5D9CC', skin: '#A9653E', hair: '#17100D', shirt: '#5A6C8A', beard: true }), name: 'Vikram', ritual: 'Raksha Kavach', loc: 'Jaipur', meta: 'Video proof ready' },
-  { av: 'S', color: '#FADDC0', photo: avatarImage({ bg: '#FADDC0', skin: '#C98255', hair: '#21120E', shirt: '#A65F46', bindi: true }), name: 'Sneha', ritual: 'Dhan Aagman', loc: 'Pune', meta: 'Ritual completed' },
-  { av: 'A', color: '#F5E5D0', photo: avatarImage({ bg: '#F5E5D0', skin: '#B66F45', hair: '#1B120F', shirt: '#2F6F62', beard: true }), name: 'Aman', ritual: 'Prem Setu', loc: 'Lucknow', meta: 'Video delivered' },
-  { av: 'P', color: '#F0D5CC', photo: avatarImage({ bg: '#F0D5CC', skin: '#A85F3D', hair: '#160D0B', shirt: '#C06C84', bindi: true }), name: 'Priya', ritual: 'Raksha Kavach', loc: 'Mumbai', meta: 'Video proof ready' },
-  { av: 'K', color: '#FADCC0', photo: avatarImage({ bg: '#FADCC0', skin: '#BC7448', hair: '#1A100D', shirt: '#355C7D', beard: true }), name: 'Karan', ritual: 'Nazar Badha', loc: 'Delhi', meta: 'Ritual completed' },
+const RITUAL_ORDER = ['nb', 'rk', 'ps', 'da'];
+
+const HOW_IT_WORKS_STEPS = [
+  {
+    label: 'Pick Moment',
+    desc: 'Choose the ritual and the moment that matters — exam, interview, wedding, travel or anything else.',
+  },
+  {
+    label: 'Book & Pay',
+    desc: 'Complete your booking and payment — the pandit may ask for your name, gotra, birth place and a few extra details to perform the ritual.',
+  },
+  {
+    label: 'Pandit performs ritual',
+    desc: 'A verified pandit performs the ritual in your name at the chosen muhurat, usually within 4–12 hours of booking.',
+  },
+  {
+    label: 'Receive ritual video',
+    desc: 'A recording of the ritual is sent to you on the app and WhatsApp so you can watch it any time.',
+  },
+  {
+    label: 'Doorstep prasad',
+    desc: 'Prasadam and kaala dhaaga are delivered to your doorstep — these are optional, not mandatory.',
+  },
 ];
 
-const TRUST_POINTS = [
-  '✅ Verified pandits',
-  '🎥 Video proof',
-  '🔒 Secure payment',
-  '📍 Live status tracking',
+const RECENT_BOOKINGS = [
+  'Riya booked Nazar Badha in Haldwani · 2 min ago',
+  'Vikram booked Raksha Kavach in Jaipur · 5 min ago',
+  'Sneha booked Dhan Aagman in Pune · 8 min ago',
+  'Aman booked Prem Setu in Lucknow · 11 min ago',
 ];
 
-const REELS = [
+const TRUST_BADGES = ['Verified pandits', 'Video proof', 'Secure payment', 'Live status tracking'];
+
+const TESTIMONIALS = [
   { bg: 'linear-gradient(180deg,#D4A882 0%,#6e3c20 100%)', name: 'Meera, 34', after: 'after Nazar Badha', dur: '0:30' },
   { bg: 'linear-gradient(180deg,#C4B890 0%,#6a5a30 100%)', name: 'Rohan, 29', after: 'after Dhan Aagman', dur: '0:28' },
   { bg: 'linear-gradient(180deg,#C8A09A 0%,#6a3030 100%)', name: 'Priya, 26', after: 'after Prem Setu', dur: '0:31' },
 ];
 
-const SCENE_SVGS = {
-  rk: <img src="/illustrations/raksha-kavach.png" alt="Raksha Kavach" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
-  da: <img src="/illustrations/dhan-aagman.png" alt="Dhan Aagman" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
-  ps: <img src="/illustrations/prem-setu.png" alt="Prem Setu" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
-  nb: <img src="/illustrations/nazar-badha.png" alt="Nazar Badha" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
-};
+const FILTERS = ['All', 'Career', 'Exams', 'Travel', 'Money', 'Love', 'Protection'];
 
-function BookingFeed() {
-  const [idx, setIdx] = useState(0);
+function categoryForMoment(ritual, groupName, momentName) {
+  const text = `${ritual.name} ${groupName} ${momentName}`.toLowerCase();
+  if (ritual.id === 'ps' || text.includes('love') || text.includes('marriage') || text.includes('family')) return 'Love';
+  if (ritual.id === 'nb' || ritual.id === 'rk' || text.includes('protection') || text.includes('nazar') || text.includes('health')) return 'Protection';
+  if (text.includes('exam') || text.includes('study') || text.includes('result')) return 'Exams';
+  if (text.includes('travel') || text.includes('flight')) return 'Travel';
+  if (ritual.id === 'da' || text.includes('money') || text.includes('deal') || text.includes('salary') || text.includes('business') || text.includes('investment')) return 'Money';
+  return 'Career';
+}
+
+function SectionHeading({ eyebrow, title }) {
+  return (
+    <>
+      <p style={styles.eyebrow}>{eyebrow}</p>
+      <h2 style={styles.h2}>{title}</h2>
+    </>
+  );
+}
+
+function CheckIcon({ size = 11, color = '#2D6B2D' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width={size} height={size} aria-hidden="true">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" width="16" height="16" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m16 16 4 4" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" width="16" height="16" aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .18s ease' }}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+function ShieldCheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="19" height="19" aria-hidden="true">
+      <path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+function HomeNav({ onSignIn }) {
+  return (
+    <nav style={styles.nav}>
+      <strong style={styles.wordmark}>Sankkalp</strong>
+      <button type="button" style={styles.signInButton} onClick={onSignIn}>Sign in</button>
+    </nav>
+  );
+}
+
+function Hero() {
+  return (
+    <section style={styles.hero}>
+      <p style={styles.eyebrow}>SANKKALP BY TATHASTU</p>
+      <h1 style={styles.h1}>Because some moments deserve more than luck.</h1>
+      <p style={styles.heroCopy}>Verified pandits perform ritual on your behalf. Get ritual video delivered online with prasad delivered on doorstep.</p>
+      <a href="#browse" style={styles.heroCta} onClick={() => trackEvent('hero_cta_clicked', { destination: 'browse' })}>Book Now →</a>
+    </section>
+  );
+}
+
+function RitualGrid({ rituals, onRitualClick }) {
+  const orderedRituals = RITUAL_ORDER.map((id) => rituals.find((ritual) => ritual.id === id)).filter(Boolean);
+  return (
+    <section id="browse" style={styles.section}>
+      <SectionHeading eyebrow="CHOOSE A RITUAL CATEGORY" title="Four rituals, one purpose" />
+      <div style={styles.ritualGrid}>
+        {orderedRituals.map((ritual) => {
+          const meta = RITUAL_META[ritual.id] || {};
+          return (
+            <button key={ritual.id} type="button" style={styles.ritualCard} onClick={() => onRitualClick(ritual)}>
+              <img src={meta.image} alt={ritual.name} loading="lazy" style={styles.ritualImage} />
+              <span style={styles.ritualBody}>
+                <span style={styles.ritualNum}>{meta.num}</span>
+                <span style={styles.ritualName}>{ritual.name}</span>
+                <span style={styles.ritualGloss}>{meta.enName}</span>
+                <span style={styles.ritualTagline}>{meta.tagline || ritual.tagline}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
+  const videoRef = useRef(null);
+  const videoWrapRef = useRef(null);
+  const [hiwStep, setHiwStep] = useState(0);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+
   useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % FEED_ITEMS.length), 2800);
-    return () => clearInterval(t);
+    const target = videoWrapRef.current;
+    if (!target) return undefined;
+
+    let loadTimer;
+    const scheduleLoad = () => {
+      loadTimer = window.setTimeout(() => setShouldLoadVideo(true), 1400);
+    };
+
+    if (!('IntersectionObserver' in window)) {
+      scheduleLoad();
+      return () => window.clearTimeout(loadTimer);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          scheduleLoad();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '120px 0px' }
+    );
+
+    observer.observe(target);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(loadTimer);
+    };
   }, []);
-  const item = FEED_ITEMS[idx];
+
+  useEffect(() => {
+    if (!shouldLoadVideo) return undefined;
+    const video = videoRef.current;
+    if (!video) return undefined;
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.play().catch(() => {});
+
+    const handleTimeUpdate = () => {
+      const nextStep = Math.floor(video.currentTime / 4) % HOW_IT_WORKS_STEPS.length;
+      setHiwStep(Number.isFinite(nextStep) ? nextStep : 0);
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [shouldLoadVideo]);
+
+  const current = HOW_IT_WORKS_STEPS[hiwStep] || HOW_IT_WORKS_STEPS[0];
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-muted)', border: '1px solid var(--border)', borderRadius: 100, padding: '8px 14px 8px 8px', width: '100%' }}>
-      <AvatarCircle item={item} size={32} />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {item.name} booked {item.ritual}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 1, fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          <span style={{ color: '#5C8A57', fontWeight: 700 }}>{item.meta}</span>
-          <span>•</span>
-          <span>{item.loc}</span>
-        </div>
+    <section style={styles.section}>
+      <SectionHeading eyebrow="How it works" title="Five steps, nothing to coordinate" />
+      <div ref={videoWrapRef} style={styles.hiwVideoWrap}>
+        <video
+          ref={videoRef}
+          src={shouldLoadVideo ? '/how-it-works.mp4' : undefined}
+          poster="/how-it-works-poster.svg"
+          muted
+          loop
+          autoPlay
+          playsInline
+          preload="none"
+          style={styles.hiwVideo}
+        />
       </div>
-      <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#5C8A57', boxShadow: '0 0 0 3px rgba(92,138,87,.12)', flexShrink: 0 }} />
-    </div>
+      <div style={styles.hiwTracker} aria-label={`Step ${hiwStep + 1}: ${current.label}`}>
+        <span style={styles.hiwLine} />
+        {HOW_IT_WORKS_STEPS.map((step, index) => {
+          const active = index === hiwStep;
+          return (
+            <button
+              key={step.label}
+              type="button"
+              style={styles.hiwNode}
+              onClick={() => {
+                if (videoRef.current) videoRef.current.currentTime = index * 4;
+                setHiwStep(index);
+              }}
+            >
+              <span style={{ ...styles.hiwDot, background: active ? 'var(--accent)' : 'var(--border)' }} />
+              <span style={{ ...styles.hiwLabel, color: active ? 'var(--ink)' : 'var(--ink-3)', fontWeight: active ? 700 : 500 }}>{step.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p style={styles.hiwCopy}>
+        <strong style={{ color: 'var(--ink)' }}>Step {hiwStep + 1} · {current.label}. </strong>
+        {current.desc}
+      </p>
+    </section>
   );
 }
 
-function AvatarCircle({ item, size = 30 }) {
+function SocialProof() {
+  const [recentIdx, setRecentIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setRecentIdx((idx) => (idx + 1) % RECENT_BOOKINGS.length), 3200);
+    return () => clearInterval(interval);
+  }, []);
+
+  const avatars = [
+    { initial: 'R', color: '#FAD7C0' },
+    { initial: 'V', color: '#F5D9CC' },
+    { initial: 'S', color: '#FADDC0' },
+    { initial: 'A', color: '#F5E5D0' },
+  ];
+
   return (
-    <div style={{ position: 'relative', width: size, height: size, borderRadius: '50%', background: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: Math.max(10, size * 0.34), color: '#5C3A1E', flexShrink: 0, border: '2px solid #fff', overflow: 'hidden', boxShadow: '0 4px 10px rgba(92,58,30,.08)' }}>
-      <span>{item.av}</span>
-      <img
-        src={item.photo}
-        alt=""
-        loading="lazy"
-        referrerPolicy="no-referrer"
-        onError={(event) => { event.currentTarget.style.display = 'none'; }}
-        style={{ position: 'absolute', width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
-      />
-    </div>
+    <section style={styles.section}>
+      <div style={styles.socialCard}>
+        <div style={styles.socialTop}>
+          <div style={styles.socialTitleRow}>
+            <span style={styles.shieldTile}><ShieldCheckIcon /></span>
+            <span>
+              <span style={styles.socialTitle}>100+ rituals booked</span>
+              <span style={styles.socialSubtitle}>Verified, secure, tracked to completion</span>
+            </span>
+          </div>
+          <div style={styles.avatarStack} aria-hidden="true">
+            {avatars.map((avatar, index) => (
+              <span key={avatar.initial} style={{ ...styles.avatar, background: avatar.color, marginLeft: index === 0 ? 0 : -8 }}>{avatar.initial}</span>
+            ))}
+          </div>
+        </div>
+        <div style={styles.recentPill}>
+          <span style={styles.greenDot} />
+          <span style={styles.recentText}>{RECENT_BOOKINGS[recentIdx]}</span>
+        </div>
+        <div style={styles.badgeRow}>
+          {TRUST_BADGES.map((badge) => (
+            <span key={badge} style={styles.trustBadge}>
+              <CheckIcon />
+              {badge}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
-function RitualBannerCard({ ritual, onClick }) {
+function Testimonials() {
   return (
-    <div className="ritual-feature-card" onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()}>
-      <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius) var(--radius) 0 0', aspectRatio: '3/2' }}>
-        {SCENE_SVGS[ritual.id]}
-        <div style={{ position: 'absolute', top: 12, left: 12 }}>
-          <span className="badge">{ritual.tag}</span>
-        </div>
+    <section style={styles.section}>
+      <SectionHeading eyebrow="Testimonials" title="Real ones, real changes" />
+      <div style={styles.testimonialScroller}>
+        {TESTIMONIALS.map((item) => (
+          <div key={item.name} style={{ ...styles.testimonialCard, background: item.bg }}>
+            <span style={styles.playButton}>
+              <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+            <span style={styles.testimonialOverlay}>
+              <span style={styles.testimonialDuration}>{item.dur}</span>
+              <span style={styles.testimonialName}>{item.name}</span>
+              <span style={styles.testimonialAfter}>{item.after}</span>
+            </span>
+          </div>
+        ))}
       </div>
-      <div className="ritual-feature-card-body">
-        <h3>{ritual.tagline}</h3>
-        <p style={{ marginBottom: 10 }}>{ritual.desc}</p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-          <span style={{ color: '#BE6A43', fontWeight: 700 }}>★ {ritual.rating}</span>
-          <span style={{ color: 'var(--text-3)' }}>·</span>
-          <span style={{ color: 'var(--text-3)' }}>{ritual.count} booked</span>
-          <span style={{ color: 'var(--text-3)', marginLeft: 'auto' }}>Starting at ₹{ritual.from}/-</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const MOMENT_ICONS = {
-  shield:    <path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z"/>,
-  coin:      <><circle cx="12" cy="12" r="8"/><path d="M12 9v6M10 12h4"/></>,
-  heart:     <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z"/>,
-  eye:       <><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.3"/></>,
-  briefcase: <><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
-  door:      <><path d="M5 21V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v17M3 21h18"/><circle cx="11" cy="12" r=".5" fill="currentColor"/></>,
-  meeting:   <><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></>,
-  chat:      <><path d="M4 5h16v11H8l-4 4Z"/><path d="M9 10h6"/></>,
-  pencil:    <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3Z"/>,
-  trophy:    <><path d="M8 4h8v4a4 4 0 0 1-8 0Z"/><path d="M12 12v4M9 20h6"/></>,
-  plane:     <path d="M22 16.2l-3.5 3.6-8.5-3.8L6 21l-2-2 4.3-4.1L5 6 7 4l5.2 4.2 4.1-4.3 3.5 1.7"/>,
-  health:    <><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z"/><path d="M9 11h2v-2h2v2h2"/></>,
-  home:      <path d="M3 11l9-7 9 7M5 10v10h14V10"/>,
-  rocket:    <path d="M12 3c3 1 5 4 5 8l-3 3H10l-3-3c0-4 2-7 5-8Z"/>,
-  building:  <><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h.01M15 7h.01"/></>,
-  car:       <><path d="M5 16l1.5-5h11L19 16M3 16h18v3h-2v-2H5v2H3Z"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/></>,
-  cash:      <><rect x="2" y="7" width="20" height="12" rx="2"/><path d="M12 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6 13h.01M18 13h.01"/></>,
-  shop:      <><path d="M4 9h16l-1 11H5Z"/><path d="M4 9l1.5-4h13L20 9"/></>,
-  tag:       <><path d="M3 12V4h8l9 9-8 8-9-9Z"/><circle cx="7.5" cy="7.5" r="1.5"/></>,
-  diamond:   <path d="M6 3h12l4 6-10 12L2 9Z"/>,
-  star:      <path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-2.8L7 19l1-6-4-4 5.5-.5Z"/>,
-  ring:      <><circle cx="12" cy="14" r="5"/><path d="M9 9l1.5-4h3L15 9"/></>,
-  bandage:   <path d="M14 5l5 5-9 9-5-5Z"/>,
-  users:     <path d="M16 11c1.7 0 3 1.3 3 3v1h-4M8 11c-1.7 0-3 1.3-3 3v1h4M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>,
-  eyeoff:    <><path d="M9.9 4.2A9 9 0 0 1 12 4c5 0 8 5 8 5a15 15 0 0 1-1.7 2.3M6.5 6.5C4.9 7.9 4 10 4 10s3 5 8 5c1.5 0 2.9-.4 4.1-1.1M3 3l18 18"/></>,
-  mood:      <><circle cx="12" cy="12" r="9"/><path d="M8 15s1.5-2 4-2 4 2 4 2M9 9h.01M15 9h.01"/></>,
-  baby:      <><circle cx="12" cy="8" r="3"/><path d="M6 21c0-4 3-7 6-7s6 3 6 7"/></>,
-  invest:    <><path d="M4 16l5-5 3 3 7-7"/><path d="M16 7h4v4"/></>,
-  homeheart: <><path d="M3 11l9-7 9 7M5 10v10h14V10"/><path d="M12 15a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></>,
-  trenddown: <><path d="M4 4l6 6 4-4 6 6"/><path d="M14 16h6v-6"/></>,
-};
-
-function MomentRow({ moment, ritualId, onSelect }) {
-  const iconContent = MOMENT_ICONS[moment.ic] || <path d="M5 12h14M13 6l6 6-6 6"/>;
-  return (
-    <div className="moment-row" onClick={() => onSelect(ritualId, moment)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onSelect(ritualId, moment)}>
-      <div className="moment-icon" style={{ background: '#F5EDE0' }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-          {iconContent}
-        </svg>
-      </div>
-      <div className="moment-info">
-        <div className="moment-name">{moment.name} {moment.pop && <span className="badge-popular" style={{ display:'inline-block', background:'#E8F0E8', color:'#2D6B2D', fontSize:10, fontWeight:700, letterSpacing:'.04em', textTransform:'uppercase', padding:'2px 8px', borderRadius:100, marginLeft:6 }}>Popular</span>}</div>
-        <div className="moment-why">{moment.why}</div>
-      </div>
-      <div className="moment-arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" width="16" height="16"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </div>
-    </div>
+    </section>
   );
 }
 
 function BrowseByMoment({ rituals, onSelect }) {
-  const [activeTab, setActiveTab] = useState(0);
-  const ritual = rituals[activeTab] || rituals[0];
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAllMoments, setShowAllMoments] = useState(false);
+
+  const moments = useMemo(() => {
+    return rituals.flatMap((ritual) => ritual.groups.flatMap((group) => group.moments.map((moment) => ({
+      ...moment,
+      ritualId: ritual.id,
+      ritualName: ritual.name,
+      category: categoryForMoment(ritual, group.name, moment.name),
+    }))));
+  }, [rituals]);
+
+  const filteredMoments = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return moments.filter((moment) => {
+      const matchesFilter = activeFilter === 'All' || moment.category === activeFilter;
+      const matchesSearch = !q || `${moment.name} ${moment.ritualName}`.toLowerCase().includes(q);
+      return matchesFilter && matchesSearch;
+    });
+  }, [activeFilter, moments, searchQuery]);
+
+  const visibleMoments = showAllMoments ? filteredMoments : filteredMoments.slice(0, 10);
+  const hiddenCount = Math.max(0, filteredMoments.length - 10);
+
+  function updateFilter(filter) {
+    setActiveFilter(filter);
+    setShowAllMoments(false);
+  }
+
+  function updateQuery(event) {
+    setSearchQuery(event.target.value);
+    setShowAllMoments(false);
+  }
 
   return (
-    <div>
-      {/* Ritual tabs */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 20 }}>
-        {rituals.map((r, i) => (
-          <button
-            key={r.id}
-            onClick={() => setActiveTab(i)}
-            style={{
-              flexShrink: 0,
-              padding: '8px 16px',
-              borderRadius: 100,
-              border: '1.5px solid',
-              borderColor: activeTab === i ? 'var(--primary)' : 'var(--border)',
-              background: activeTab === i ? 'var(--primary)' : 'var(--bg-card)',
-              color: activeTab === i ? '#fff' : 'var(--text)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {r.name}
+    <section style={styles.section}>
+      <h2 style={{ ...styles.h2, marginBottom: 12 }}>Search your moment</h2>
+      <label style={styles.searchBox}>
+        <span style={{ color: 'var(--ink-3)', display: 'inline-flex' }}><SearchIcon /></span>
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={updateQuery}
+          placeholder="Exam, interview, new home…"
+          style={styles.searchInput}
+        />
+      </label>
+      <div style={styles.filterScroller} aria-label="Moment filters">
+        {FILTERS.map((filter) => {
+          const active = activeFilter === filter;
+          return (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => updateFilter(filter)}
+              style={{ ...styles.filterPill, background: active ? 'var(--ink)' : 'var(--card)', color: active ? '#fff' : 'var(--ink)', borderColor: active ? 'var(--ink)' : 'var(--border)' }}
+            >
+              {filter}
+            </button>
+          );
+        })}
+      </div>
+      <div style={styles.momentList}>
+        {visibleMoments.map((moment) => (
+          <button key={`${moment.ritualId}-${moment.id}`} type="button" style={styles.momentRow} onClick={() => onSelect(moment.ritualId, moment)}>
+            <span style={styles.momentText}>
+              <span style={styles.momentName}>{moment.name}</span>
+              <span style={styles.momentRitual}>{moment.ritualName}</span>
+            </span>
+            <span style={styles.momentPrice}>₹{moment.price}</span>
           </button>
         ))}
+        {filteredMoments.length === 0 && (
+          <p style={styles.emptyState}>No moments match “{searchQuery}”</p>
+        )}
       </div>
-
-      {/* Moments for active ritual */}
-      {ritual.groups.map((g, gi) => {
-        const sorted = [...g.moments].sort((a, b) => (b.pop ? 1 : 0) - (a.pop ? 1 : 0));
-        return (
-          <div key={gi} style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 10 }}>{g.name}</div>
-            <div className="card" style={{ overflow: 'hidden' }}>
-              {sorted.map(m => (
-                <MomentRow key={m.id} moment={m} ritualId={ritual.id} onSelect={onSelect} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+      {hiddenCount > 0 && (
+        <button type="button" style={styles.viewMoreButton} onClick={() => setShowAllMoments((value) => !value)}>
+          {showAllMoments ? 'Show less' : `View ${hiddenCount} more`}
+        </button>
+      )}
+    </section>
   );
 }
 
-// Nodes are equally spaced (72° apart) so the 10s animateMotion orbit
-// stays in sync with the 2s React step interval (5 × 2s = 10s).
-const HIW_NODES = [
-  { cx: 190, cy:  47, label: 'Pick',   sub: 'your moment', desc: 'Choose the ritual and the moment that matters — exam, interview, wedding, travel or anything else.' },
-  { cx: 290, cy: 120, label: 'Timeline', sub: 'auto-shown', desc: 'We show when your ritual video will arrive based on the 2 PM IST cutoff and inauspicious-day rules.' },
-  { cx: 252, cy: 237, label: 'Pandit', sub: 'assigned',     desc: 'A verified, experienced pandit is assigned to your booking and confirms the sankalp details.' },
-  { cx: 128, cy: 237, label: 'Ritual', sub: 'performed',    desc: 'The pandit performs the ritual in your name and gotra at the chosen muhurat — you don\'t need to do anything.' },
-  { cx:  90, cy: 120, label: 'Video',  sub: 'to you',       desc: 'A recording of the ritual is sent to you on the app and WhatsApp so you can watch it any time.' },
-];
-
-function HowItWorks() {
-  const [step, setStep] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setStep(s => (s + 1) % 5), 2000);
-    return () => clearInterval(t);
-  }, []);
-
+function FaqSection({ openFaq, setOpenFaq }) {
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 16px 20px', maxWidth: 480, margin: '0 auto' }}>
-      <svg viewBox="0 0 380 300" width="100%" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="hiwGrad" cx="50%" cy="55%" r="55%">
-            <stop offset="0%" stopColor="#DCC290"/>
-            <stop offset="55%" stopColor="#BE6A43"/>
-            <stop offset="100%" stopColor="#7a4026"/>
-          </radialGradient>
-          <filter id="hiwGlow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          {/* Clockwise orbit path starting from Node 1 (top) */}
-          <path id="hiwOrbit" d="M 190 47 A 105 105 0 1 1 189.99 47"/>
-        </defs>
-
-        {/* Slowly rotating dashed orbit ring */}
-        <circle cx="190" cy="152" r="105" fill="none" stroke="#BE6A43" strokeWidth="1" strokeDasharray="3 8" strokeLinecap="round" opacity=".3">
-          <animateTransform attributeName="transform" type="rotate" from="0 190 152" to="360 190 152" dur="40s" repeatCount="indefinite"/>
-        </circle>
-
-        {/* Glow halo behind traveling dot */}
-        <circle r="18" fill="#F2B79A" opacity="0.18" filter="url(#hiwGlow)">
-          <animateMotion dur="10s" repeatCount="indefinite">
-            <mpath href="#hiwOrbit"/>
-          </animateMotion>
-        </circle>
-
-        {/* Traveling dot */}
-        <circle r="7" fill="#BE6A43" opacity="0.95" filter="url(#hiwGlow)">
-          <animateMotion dur="10s" repeatCount="indefinite">
-            <mpath href="#hiwOrbit"/>
-          </animateMotion>
-          <animate attributeName="r" values="7;8.5;7" dur="0.6s" repeatCount="indefinite"/>
-        </circle>
-
-        {/* Center — gently breathing */}
-        <circle cx="190" cy="152" r="42" fill="url(#hiwGrad)">
-          <animate attributeName="r" values="42;45;42" dur="2.5s" repeatCount="indefinite"/>
-        </circle>
-        <path d="M190 135c1 3-2 4-2 7a2 2 0 0 0 4 0c2 2 3 3.5 3 6a5 5 0 0 1-10 0c0-3 2-4 2-7 0-2 2-3 3-6Z" fill="#fff" opacity=".95"/>
-        <text x="190" y="190" textAnchor="middle" style={{fontFamily:'system-ui',fontSize:11,fontWeight:700,fill:'#7C7468'}}>~30 min</text>
-
-        {/* Nodes */}
-        {HIW_NODES.map((n, i) => {
-          const active = step === i;
+    <section style={styles.section}>
+      <SectionHeading eyebrow="The basics" title="Before you book" />
+      <div style={styles.faqList}>
+        {FAQS.map((faq, index) => {
+          const open = openFaq === index;
           return (
-            <g key={i}>
-              {active && (
-                <circle cx={n.cx} cy={n.cy} r="36" fill="none" stroke="#BE6A43" strokeWidth="1.5">
-                  <animate attributeName="r" values="34;42;34" dur="1s" repeatCount="indefinite"/>
-                  <animate attributeName="opacity" values="0.6;0;0.6" dur="1s" repeatCount="indefinite"/>
-                </circle>
-              )}
-              <circle cx={n.cx} cy={n.cy} r="28"
-                fill={active ? '#FDF0E8' : '#FAF6EF'}
-                stroke={active ? '#BE6A43' : '#E7E1D5'}
-                strokeWidth={active ? 2 : 1}
-              />
-              <text x={n.cx} y={n.cy - 4} textAnchor="middle" style={{fontFamily:'system-ui',fontSize:13,fontWeight:600,fill: active ? '#7a3020' : '#2C2620'}}>{n.label}</text>
-              <text x={n.cx} y={n.cy + 10} textAnchor="middle" style={{fontFamily:'system-ui',fontSize:9.5,fill:'#7C7468'}}>{n.sub}</text>
-              <circle cx={n.cx - 16} cy={n.cy - 16} r="9" fill={active ? '#7a3020' : '#BE6A43'}/>
-              <text x={n.cx - 16} y={n.cy - 12} textAnchor="middle" style={{fontFamily:'system-ui',fontSize:9,fontWeight:700,fill:'#fff'}}>{i + 1}</text>
-            </g>
+            <button key={faq.q} type="button" style={styles.faqItem} onClick={() => setOpenFaq(open ? null : index)}>
+              <span style={styles.faqQuestion}>
+                {faq.q}
+                <ChevronIcon open={open} />
+              </span>
+              {open && <span style={styles.faqAnswer}>{faq.a}</span>}
+            </button>
           );
         })}
-      </svg>
-
-      {/* Step description */}
-      <div style={{ minHeight: 52, textAlign: 'center', padding: '0 8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 10 }}>
-          {HIW_NODES.map((_, i) => (
-            <div key={i} style={{ width: i === step ? 20 : 6, height: 6, borderRadius: 3, background: i === step ? '#BE6A43' : '#E7E1D5', transition: 'all 0.3s ease' }}/>
-          ))}
-        </div>
-        <p style={{ fontSize: 13, color: 'var(--text-3)', margin: 0, lineHeight: 1.5 }}>
-          <strong style={{ color: 'var(--text-2)' }}>Step {step + 1} · {HIW_NODES[step].label}. </strong>
-          {HIW_NODES[step].desc}
-        </p>
       </div>
+    </section>
+  );
+}
+
+function StickyBookBar({ startingPrice }) {
+  return (
+    <div style={styles.stickyBar}>
+      <div>
+        <div style={styles.stickyLabel}>From</div>
+        <div style={styles.stickyPrice}>₹{startingPrice}</div>
+      </div>
+      <a href="#browse" style={styles.stickyButton} onClick={() => trackEvent('sticky_book_now_clicked', { destination: 'browse' })}>Book now</a>
     </div>
   );
 }
@@ -336,7 +479,6 @@ export default function HomePage() {
   const { update } = useBooking();
   const [openFaq, setOpenFaq] = useState(null);
   const [rituals, setRituals] = useState(RITUALS);
-  const startingPrice = Math.min(...rituals.flatMap((ritual) => ritual.groups.flatMap((group) => group.moments.map((moment) => moment.price).filter(Boolean))));
 
   useEffect(() => {
     let cancelled = false;
@@ -348,10 +490,26 @@ export default function HomePage() {
     return () => { cancelled = true; };
   }, []);
 
+  const startingPrice = useMemo(() => {
+    const prices = rituals.flatMap((ritual) => ritual.groups.flatMap((group) => group.moments.map((moment) => moment.price).filter(Boolean)));
+    return prices.length ? Math.min(...prices) : 149;
+  }, [rituals]);
+
+  function handleRitualClick(ritual) {
+    trackEvent('ritual_card_clicked', {
+      source: 'homepage_ritual_grid',
+      ritual_id: ritual.id,
+      ritual_name: ritual.name,
+      from_price: ritual.from,
+      currency: 'INR',
+    });
+    navigate(`/ritual/${ritual.id}`);
+  }
+
   function handleMomentSelect(ritualId, moment) {
-    const ritual = rituals.find(r => r.id === ritualId);
+    const ritual = rituals.find((item) => item.id === ritualId);
     trackEvent('moment_selected', {
-      source: 'home_browse_by_moment',
+      source: 'home_search_moment',
       ritual_id: ritualId,
       ritual_name: ritual?.name,
       moment_id: moment.id,
@@ -371,149 +529,543 @@ export default function HomePage() {
   }
 
   return (
-    <div className="page-wrap">
-      <Navbar />
-
-      <main style={{ flex: 1 }}>
-
-        {/* Hero */}
-        <div className="container">
-          <div className="hero">
-            <h1 className="hero-title">Because some moments deserve more than luck.</h1>
-            <p className="hero-sub">Trusted rituals performed in your name by verified pandits. Video confirmation included.</p>
-            <div className="hero-cta-row">
-              <a href="#browse" className="btn-primary" onClick={() => trackEvent('hero_cta_clicked', { destination: 'browse' })}>Find the right ritual for your situation</a>
-            </div>
-          </div>
-        </div>
-
-        {/* Featured ritual cards */}
-        <div className="container" id="browse">
-          <div className="section">
-            <p className="section-label">Featured Services</p>
-            <h2 className="section-title">Rituals for moments that matter</h2>
-            <div className="ritual-grid">
-              {rituals.map(r => (
-                <RitualBannerCard
-                  key={r.id}
-                  ritual={r}
-                  onClick={() => {
-                    trackEvent('ritual_card_clicked', {
-                      source: 'featured_services',
-                      ritual_id: r.id,
-                      ritual_name: r.name,
-                      from_price: r.from,
-                      currency: 'INR',
-                    });
-                    navigate(`/ritual/${r.id}`);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* People like you — social proof */}
-        <div className="container">
-          <div className="section">
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'center', marginBottom: 14 }}>
-                <div>
-                  <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 3 }}>14,000+ rituals booked</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.4 }}>Every booking is verified, securely processed, and tracked until the ritual is complete.</p>
-                </div>
-                <div style={{ display: 'flex', flexShrink: 0 }}>
-                  {FEED_ITEMS.slice(0, 4).map((item, index) => (
-                    <div key={item.name} style={{ marginLeft: index === 0 ? 0 : -10 }}>
-                      <AvatarCircle item={item} size={34} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                {TRUST_POINTS.map((point) => (
-                  <span key={point} style={{ fontSize: 11, fontWeight: 800, color: '#5C8A57', background: '#EEF6EA', border: '1px solid #D9EAD3', borderRadius: 100, padding: '4px 8px' }}>
-                    {point}
-                  </span>
-                ))}
-              </div>
-              <BookingFeed />
-            </div>
-          </div>
-        </div>
-
-        {/* How it works */}
-        <div className="container">
-          <div className="section">
-            <p className="section-label">How it works</p>
-            <h2 className="section-title">How Sankalp works in 5 steps</h2>
-            <StoryAnimation />
-          </div>
-        </div>
-
-        {/* Video testimonials — Real ones, real changes */}
-        <div className="container">
-          <div className="section">
-            <p className="section-label">Testimonials</p>
-            <h2 className="section-title">Real ones, real changes</h2>
-            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
-              {REELS.map((r, i) => (
-                <div key={i} style={{ flexShrink: 0, width: 140, height: 220, borderRadius: 16, background: r.bg, position: 'relative', cursor: 'pointer', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -60%)', width: 44, height: 44, background: 'rgba(255,255,255,0.25)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                    <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M8 5v14l11-7z"/></svg>
-                  </div>
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 12px 14px', background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)' }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{r.dur}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{r.name}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>{r.after}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Browse by moment */}
-        <div className="container">
-          <div className="section">
-            <p className="section-label">Browse by moment</p>
-            <h2 className="section-title">What moment are you preparing for?</h2>
-            <BrowseByMoment rituals={rituals} onSelect={handleMomentSelect} />
-          </div>
-        </div>
-
-        {/* FAQ */}
-        <div className="container">
-          <div className="section">
-            <p className="section-label">The basics</p>
-            <h2 className="section-title">Before you book</h2>
-            {FAQS.map((f, i) => (
-              <div key={i} className="faq-item" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                <div className="faq-question">
-                  {f.q}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" style={{ transform: openFaq === i ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
-                </div>
-                {openFaq === i && <div className="faq-answer">{f.a}</div>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom CTA */}
-        <div className="container">
-          <div style={{ textAlign: 'center', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '36px 24px', marginBottom: 40 }}>
-            <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Ready to book your Sankalp?</p>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 24 }}>Starts at ₹{startingPrice} · OTP verified booking</p>
-          </div>
-        </div>
+    <div style={styles.page}>
+      <HomeNav onSignIn={() => navigate('/signin')} />
+      <main style={styles.main}>
+        <Hero />
+        <RitualGrid rituals={rituals} onRitualClick={handleRitualClick} />
+        <HowItWorks />
+        <SocialProof />
+        <Testimonials />
+        <BrowseByMoment rituals={rituals} onSelect={handleMomentSelect} />
+        <FaqSection openFaq={openFaq} setOpenFaq={setOpenFaq} />
       </main>
-
-      <footer className="footer">
-        <p>Sankalp by Tathastu — rituals, sorted</p>
-      </footer>
+      <footer style={styles.footer}>Sankkalp by Tathastu — rituals, sorted</footer>
+      <StickyBookBar startingPrice={startingPrice} />
     </div>
   );
 }
+
+const styles = {
+  page: {
+    '--bg': '#F7F5F1',
+    '--card': '#FFFFFF',
+    '--ink': '#191919',
+    '--ink-2': '#5C574D',
+    '--ink-3': '#8A8378',
+    '--accent': '#B5654A',
+    '--border': '#E4E0D5',
+    minHeight: '100vh',
+    background: 'var(--bg)',
+    color: 'var(--ink)',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+    lineHeight: 1.5,
+    paddingBottom: 78,
+  },
+  nav: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    height: 52,
+    background: 'var(--bg)',
+    borderBottom: '1px solid var(--border)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 16px',
+    maxWidth: 520,
+    margin: '0 auto',
+  },
+  wordmark: {
+    fontSize: 15,
+    fontWeight: 600,
+    letterSpacing: '-.01em',
+  },
+  signInButton: {
+    color: 'var(--ink)',
+    fontSize: 12,
+    fontWeight: 600,
+    textDecoration: 'underline',
+    background: 'none',
+    border: 0,
+    padding: 0,
+  },
+  main: {
+    maxWidth: 520,
+    margin: '0 auto',
+    padding: '0 16px',
+  },
+  hero: {
+    padding: '20px 0 16px',
+  },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: '.14em',
+    textTransform: 'uppercase',
+    color: 'var(--accent)',
+    margin: '0 0 5px',
+  },
+  h1: {
+    fontSize: 'clamp(22px, 5.5vw, 30px)',
+    fontWeight: 700,
+    lineHeight: 1.2,
+    letterSpacing: '-.01em',
+    margin: '0 0 10px',
+    color: 'var(--ink)',
+  },
+  heroCopy: {
+    fontSize: 13,
+    color: 'var(--ink-2)',
+    lineHeight: 1.55,
+    margin: '0 0 16px',
+  },
+  heroCta: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    background: 'var(--ink)',
+    color: '#fff',
+    fontSize: 13.5,
+    fontWeight: 600,
+    padding: '13px 20px',
+    borderRadius: 8,
+    textDecoration: 'none',
+  },
+  section: {
+    marginBottom: 28,
+  },
+  h2: {
+    fontSize: 18,
+    fontWeight: 700,
+    lineHeight: 1.15,
+    letterSpacing: '-.01em',
+    margin: '0 0 14px',
+  },
+  ritualGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10,
+  },
+  ritualCard: {
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    overflow: 'hidden',
+    textAlign: 'left',
+    color: 'var(--ink)',
+    padding: 0,
+  },
+  ritualImage: {
+    width: '100%',
+    height: 100,
+    objectFit: 'cover',
+  },
+  ritualBody: {
+    display: 'block',
+    padding: '12px 13px',
+  },
+  ritualNum: {
+    display: 'block',
+    fontSize: 9,
+    color: 'var(--accent)',
+    fontWeight: 700,
+    marginBottom: 5,
+  },
+  ritualName: {
+    display: 'block',
+    fontSize: 13.5,
+    fontWeight: 700,
+    lineHeight: 1.25,
+  },
+  ritualGloss: {
+    display: 'block',
+    fontSize: 10,
+    color: 'var(--ink-3)',
+    marginTop: 1,
+  },
+  ritualTagline: {
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    fontSize: 11,
+    color: 'var(--ink-2)',
+    marginTop: 7,
+    lineHeight: 1.4,
+  },
+  hiwVideoWrap: {
+    width: 160,
+    height: 284,
+    borderRadius: 12,
+    overflow: 'hidden',
+    margin: '0 auto 18px',
+    background: 'var(--border)',
+  },
+  hiwVideo: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  hiwTracker: {
+    position: 'relative',
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  hiwLine: {
+    position: 'absolute',
+    top: 5,
+    left: 10,
+    right: 10,
+    height: 1,
+    background: 'var(--border)',
+  },
+  hiwNode: {
+    textAlign: 'center',
+    position: 'relative',
+    flex: 1,
+    minWidth: 0,
+    padding: 0,
+    background: 'transparent',
+    border: 0,
+  },
+  hiwDot: {
+    display: 'block',
+    width: 11,
+    height: 11,
+    borderRadius: '50%',
+    margin: '0 auto 8px',
+    transition: 'background .18s ease',
+  },
+  hiwLabel: {
+    display: 'block',
+    fontSize: 10,
+    lineHeight: 1.15,
+    transition: 'color .18s ease',
+  },
+  hiwCopy: {
+    textAlign: 'center',
+    fontSize: 12.5,
+    color: 'var(--ink-2)',
+    lineHeight: 1.55,
+    margin: 0,
+  },
+  socialCard: {
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    padding: '18px 16px',
+  },
+  socialTop: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
+  },
+  socialTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    minWidth: 0,
+  },
+  shieldTile: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    background: '#F2ECE3',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  socialTitle: {
+    display: 'block',
+    fontSize: 17,
+    fontWeight: 800,
+    lineHeight: 1.1,
+  },
+  socialSubtitle: {
+    display: 'block',
+    fontSize: 11,
+    color: 'var(--ink-3)',
+    marginTop: 2,
+  },
+  avatarStack: {
+    display: 'flex',
+    flexShrink: 0,
+  },
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 800,
+    fontSize: 11,
+    color: '#5C3A1E',
+    border: '2px solid #fff',
+  },
+  recentPill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    background: 'var(--bg)',
+    borderRadius: 100,
+    padding: '8px 12px',
+    marginBottom: 12,
+  },
+  greenDot: {
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: '#2D6B2D',
+    flexShrink: 0,
+  },
+  recentText: {
+    fontSize: 11,
+    color: 'var(--ink-2)',
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  badgeRow: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  trustBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    fontSize: 10.5,
+    fontWeight: 700,
+    color: '#2D6B2D',
+    background: '#EAF2EA',
+    border: '1px solid #D3E5D0',
+    borderRadius: 100,
+    padding: '5px 10px 5px 8px',
+  },
+  testimonialScroller: {
+    display: 'flex',
+    gap: 12,
+    overflowX: 'auto',
+    paddingBottom: 8,
+    scrollbarWidth: 'none',
+  },
+  testimonialCard: {
+    flexShrink: 0,
+    width: 118,
+    height: 188,
+    borderRadius: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  playButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -60%)',
+    width: 38,
+    height: 38,
+    background: 'rgba(255,255,255,.28)',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backdropFilter: 'blur(4px)',
+  },
+  testimonialOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: '28px 10px 12px',
+    background: 'linear-gradient(to top, rgba(0,0,0,.62), transparent)',
+  },
+  testimonialDuration: {
+    display: 'block',
+    color: 'rgba(255,255,255,.72)',
+    fontSize: 10,
+  },
+  testimonialName: {
+    display: 'block',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 700,
+  },
+  testimonialAfter: {
+    display: 'block',
+    color: 'rgba(255,255,255,.82)',
+    fontSize: 10,
+  },
+  searchBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 9,
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 10,
+    padding: '11px 12px',
+    marginBottom: 10,
+  },
+  searchInput: {
+    width: '100%',
+    border: 0,
+    outline: 'none',
+    background: 'transparent',
+    color: 'var(--ink)',
+    fontSize: 13,
+  },
+  filterScroller: {
+    display: 'flex',
+    gap: 8,
+    overflowX: 'auto',
+    paddingBottom: 10,
+    scrollbarWidth: 'none',
+  },
+  filterPill: {
+    flexShrink: 0,
+    border: '1px solid',
+    borderRadius: 100,
+    padding: '7px 13px',
+    fontSize: 12,
+    fontWeight: 700,
+  },
+  momentList: {
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  momentRow: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '13px 14px',
+    background: 'var(--card)',
+    border: 0,
+    borderBottom: '1px solid var(--border)',
+    textAlign: 'left',
+    color: 'var(--ink)',
+  },
+  momentText: {
+    display: 'block',
+    minWidth: 0,
+  },
+  momentName: {
+    display: 'block',
+    fontSize: 13,
+    fontWeight: 600,
+    lineHeight: 1.25,
+  },
+  momentRitual: {
+    display: 'block',
+    color: 'var(--accent)',
+    fontSize: 10.5,
+    fontWeight: 700,
+    marginTop: 2,
+  },
+  momentPrice: {
+    color: 'var(--accent)',
+    fontSize: 12.5,
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  emptyState: {
+    textAlign: 'center',
+    color: 'var(--ink-3)',
+    fontSize: 12.5,
+    padding: '22px 10px',
+    margin: 0,
+  },
+  viewMoreButton: {
+    width: '100%',
+    marginTop: 8,
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    color: 'var(--ink)',
+    borderRadius: 10,
+    padding: '11px 14px',
+    fontSize: 13,
+    fontWeight: 700,
+  },
+  faqList: {
+    display: 'grid',
+    gap: 8,
+  },
+  faqItem: {
+    width: '100%',
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    padding: '13px 14px',
+    textAlign: 'left',
+    color: 'var(--ink)',
+  },
+  faqQuestion: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    fontSize: 13,
+    fontWeight: 700,
+  },
+  faqAnswer: {
+    display: 'block',
+    color: 'var(--ink-2)',
+    fontSize: 12.5,
+    lineHeight: 1.55,
+    marginTop: 9,
+  },
+  footer: {
+    maxWidth: 520,
+    margin: '0 auto',
+    padding: '18px 16px',
+    textAlign: 'center',
+    borderTop: '1px solid var(--border)',
+    color: 'var(--ink-3)',
+    fontSize: 11.5,
+  },
+  stickyBar: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 120,
+    maxWidth: 520,
+    margin: '0 auto',
+    background: '#fff',
+    borderTop: '1px solid #E4E0D5',
+    padding: '13px 16px calc(13px + env(safe-area-inset-bottom))',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stickyLabel: {
+    fontSize: 12.5,
+    color: '#8A8378',
+    lineHeight: 1.1,
+  },
+  stickyPrice: {
+    color: '#191919',
+    fontSize: 15,
+    fontWeight: 700,
+  },
+  stickyButton: {
+    border: '1.5px solid #191919',
+    color: '#191919',
+    background: '#fff',
+    borderRadius: 8,
+    padding: '10px 18px',
+    fontSize: 13,
+    fontWeight: 700,
+    textDecoration: 'none',
+  },
+};
