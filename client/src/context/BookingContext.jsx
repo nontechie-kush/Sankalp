@@ -6,6 +6,7 @@ function emptyBooking() {
   return {
     ritualId: null, ritualName: '', momentId: null, momentName: '',
     price: 0, deliveryDate: '', phone: '', userName: '', gotra: '', place: '',
+    bookingFor: 'self', beneficiaryRelation: '',
     clientRequestId: crypto.randomUUID(),
   };
 }

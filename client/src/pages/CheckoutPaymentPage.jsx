@@ -117,8 +117,13 @@ export default function CheckoutPaymentPage() {
     rzp.open();
   }
 
+  const forLabel = booking.bookingFor === 'other'
+    ? `${booking.userName}${booking.beneficiaryRelation ? ` (your ${booking.beneficiaryRelation.toLowerCase()})` : ''}`
+    : booking.userName || booking.phone;
+
   const rows = [
-    { label: 'Account', value: booking.userName || booking.phone },
+    { label: 'Account', value: booking.phone },
+    { label: booking.bookingFor === 'other' ? 'Booking for' : 'Sankalp for', value: forLabel },
     booking.gotra && { label: 'Gotra', value: booking.gotra },
     booking.place && { label: 'Location', value: booking.place },
     { label: 'Ritual', value: booking.ritualName },
