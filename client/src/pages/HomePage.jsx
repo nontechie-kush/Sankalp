@@ -56,49 +56,10 @@ const REELS = [
 ];
 
 const SCENE_SVGS = {
-  rk: (
-    <svg viewBox="0 0 360 100" width="100%" xmlns="http://www.w3.org/2000/svg">
-      <rect width="360" height="100" fill="#F5EDE0"/>
-      <line x1="40" y1="86" x2="320" y2="86" stroke="#d4c4b0" strokeWidth="1.2"/>
-      <circle cx="268" cy="38" r="15" fill="#F5EDE0" stroke="#BE6A43" strokeWidth="1.6"/>
-      <path d="M268 38 V28 M268 38 H260" stroke="#BE6A43" strokeWidth="1.6" strokeLinecap="round"/>
-      <path d="M150 84 L150 62 Q170 56 188 62 L188 84 Z" fill="#F3EADD"/>
-      <path d="M188 84 L188 62 Q206 56 224 62 L224 84 Z" fill="#EDE3D4"/>
-      <g stroke="#C9B79C" strokeWidth="1" opacity=".9"><line x1="158" y1="68" x2="180" y2="66"/><line x1="158" y1="74" x2="180" y2="72"/><line x1="196" y1="66" x2="218" y2="68"/><line x1="196" y1="72" x2="218" y2="74"/></g>
-      <g transform="rotate(34 118 66)"><rect x="97" y="62" width="30" height="5" rx="2" fill="#BE6A43"/><path d="M127 62 l7 2.5 -7 2.5Z" fill="#F3EADD"/></g>
-      <path d="M122 86 A66 52 0 0 1 246 86" fill="none" stroke="#BE6A43" strokeWidth="1.2" strokeDasharray="2 5" opacity=".5"/>
-    </svg>
-  ),
-  da: (
-    <svg viewBox="0 0 360 100" width="100%" xmlns="http://www.w3.org/2000/svg">
-      <rect width="360" height="100" fill="#F5EDE0"/>
-      <rect x="132" y="28" width="96" height="50" rx="4" fill="#2C2620" opacity=".85"/>
-      <path d="M122 88 h116 l-8 -6 H130 Z" fill="#BE6A43" opacity=".7"/>
-      <rect x="148" y="62" width="10" height="14" fill="#DCC290"/><rect x="166" y="54" width="10" height="22" fill="#DCC290"/><rect x="184" y="44" width="10" height="32" fill="#F0D87A"/>
-      <path d="M152 64 L170 50 L188 40" fill="none" stroke="#F5EDE0" strokeWidth="1.8"/>
-      <g fill="#DCC290" stroke="#A8824E" strokeWidth=".5"><ellipse cx="272" cy="78" rx="12" ry="4.5"/><ellipse cx="272" cy="72" rx="12" ry="4.5"/><ellipse cx="272" cy="66" rx="12" ry="4.5"/></g>
-    </svg>
-  ),
-  ps: (
-    <svg viewBox="0 0 360 100" width="100%" xmlns="http://www.w3.org/2000/svg">
-      <rect width="360" height="100" fill="#F5EDE0"/>
-      <path d="M88 30 h76 a9 9 0 0 1 9 9 v18 a9 9 0 0 1 -9 9 h-56 l-12 10 v-10 a9 9 0 0 1 -8 -9 v-18 a9 9 0 0 1 8 -18Z" fill="#EDE3D4" stroke="#BE6A43" strokeWidth="1.2"/>
-      <g fill="#BE6A43" opacity=".6"><circle cx="112" cy="49" r="2.8"/><circle cx="124" cy="49" r="2.8"/><circle cx="136" cy="49" r="2.8"/></g>
-      <path d="M192 44 h68 a9 9 0 0 1 9 9 v16 a9 9 0 0 1 -9 9 h-44 l-12 10 v-10 a9 9 0 0 1 -9 -9 v-16 a9 9 0 0 1 9 -9Z" fill="#F0E8E0" stroke="#BE6A43" strokeWidth="1.2"/>
-      <path d="M232 72c-5-4-9-8-9-12a4.5 4.5 0 0 1 9-2.4A4.5 4.5 0 0 1 241 60c0 4-4 8-9 12Z" fill="#D87B5E"/>
-    </svg>
-  ),
-  nb: (
-    <svg viewBox="0 0 360 100" width="100%" xmlns="http://www.w3.org/2000/svg">
-      <rect width="360" height="100" fill="#F5EDE0"/>
-      <line x1="40" y1="90" x2="320" y2="90" stroke="#d4c4b0" strokeWidth="1"/>
-      <polyline points="50,82 90,68 130,54 168,36 198,26" fill="none" stroke="#DCC290" strokeWidth="2.2"/>
-      <polyline points="198,26 222,50 248,78 282,86" fill="none" stroke="#BE6A43" strokeWidth="2.2"/>
-      <path d="M198 26 l3 5 5 .5 -4 3.5 1.2 5.5 -5.2-2.8 -5.2 2.8 1.2-5.5 -4-3.5 5-.5Z" fill="#F0D87A"/>
-      <ellipse cx="282" cy="74" rx="13" ry="8.5" fill="none" stroke="#9a8FB0" strokeWidth="1.4" opacity=".7"/>
-      <circle cx="282" cy="74" r="4.5" fill="#2C2620" opacity=".7" stroke="#BE6A43" strokeWidth="1.2"/>
-    </svg>
-  ),
+  rk: <img src="/illustrations/raksha-kavach.png" alt="Raksha Kavach" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
+  da: <img src="/illustrations/dhan-aagman.png" alt="Dhan Aagman" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
+  ps: <img src="/illustrations/prem-setu.png" alt="Prem Setu" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
+  nb: <img src="/illustrations/nazar-badha.png" alt="Nazar Badha" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />,
 };
 
 function BookingFeed() {
