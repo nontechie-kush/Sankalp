@@ -106,9 +106,9 @@ function AvatarCircle({ item, size = 30 }) {
 function RitualBannerCard({ ritual, onClick }) {
   return (
     <div className="ritual-feature-card" onClick={onClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && onClick()}>
-      <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius) var(--radius) 0 0' }}>
+      <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--radius) var(--radius) 0 0', aspectRatio: '3/2' }}>
         {SCENE_SVGS[ritual.id]}
-        <div style={{ position: 'absolute', top: 8, left: 8 }}>
+        <div style={{ position: 'absolute', top: 12, left: 12 }}>
           <span className="badge">{ritual.tag}</span>
         </div>
       </div>
