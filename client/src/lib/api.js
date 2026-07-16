@@ -44,6 +44,8 @@ function profileToUser(profile) {
     leadId: profile?.lead_id || null,
     phone: profile?.phone || '',
     name: profile?.name || '',
+    gotra: profile?.gotra || '',
+    sankalpLocation: profile?.sankalp_location || '',
     dateOfBirth: profile?.date_of_birth || null,
     placeOfBirth: profile?.place_of_birth || null,
     ritualPoints: 0,
@@ -195,6 +197,8 @@ export const api = {
     try {
       let result = await supabase.rpc('update_my_mweb_profile_v2', {
         p_name: name,
+        p_gotra: gotra || null,
+        p_sankalp_location: extra.sankalpLocation || extra.location || null,
         p_date_of_birth: extra.dateOfBirth || null,
         p_place_of_birth: extra.placeOfBirth || null,
         p_place_of_birth_id: extra.placeOfBirthId || null,

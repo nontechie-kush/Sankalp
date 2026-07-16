@@ -13,6 +13,7 @@ export default function SignInPage() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [name, setName] = useState('');
   const [gotra, setGotra] = useState('');
+  const [place, setPlace] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -81,7 +82,9 @@ export default function SignInPage() {
     if (name.trim().length < 2) { setError('Enter your full name'); return; }
     trackEvent('signin_profile_save_started');
     setLoading(true); setError('');
-    const d = await api.saveProfile(name.trim(), gotra.trim());
+    const d = await api.saveProfile(name.trim(), gotra.trim(), {
+      sankalpLocation: place.trim(),
+    });
     setLoading(false);
     if (!d.success) {
       trackEvent('signin_profile_save_failed');
@@ -210,6 +213,11 @@ export default function SignInPage() {
                 <label className="field-label">Gotra <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
                 <input className="field-input" type="text" placeholder="e.g. Kashyap" value={gotra} onChange={e => setGotra(e.target.value)} />
                 <div className="field-hint">The pandit will mention your gotra in the sankalp.</div>
+              </div>
+              <div className="field">
+                <label className="field-label">Current city / location <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(recommended)</span></label>
+                <input className="field-input" type="text" autoComplete="address-level2" placeholder="e.g. Gurugram, Delhi" value={place} onChange={e => setPlace(e.target.value)} />
+                <div className="field-hint">This is used only for the ritual sankalp.</div>
               </div>
               <button className="btn-primary" style={{ width: '100%', padding: '14px' }} onClick={saveProfile} disabled={loading || name.trim().length < 2}>
                 {loading ? 'Saving…' : 'Continue →'}

@@ -5,7 +5,7 @@ const Ctx = createContext(null);
 function emptyBooking() {
   return {
     ritualId: null, ritualName: '', momentId: null, momentName: '',
-    price: 0, deliveryDate: '', phone: '', userName: '',
+    price: 0, deliveryDate: '', phone: '', userName: '', gotra: '', place: '',
     clientRequestId: crypto.randomUUID(),
   };
 }

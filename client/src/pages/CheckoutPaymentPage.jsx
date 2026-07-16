@@ -119,10 +119,11 @@ export default function CheckoutPaymentPage() {
 
   const rows = [
     { label: 'Account', value: booking.userName || booking.phone },
+    booking.gotra && { label: 'Gotra', value: booking.gotra },
+    booking.place && { label: 'Location', value: booking.place },
     { label: 'Ritual', value: booking.ritualName },
     { label: 'Intent', value: booking.momentName },
     booking.slotLabel && { label: 'Date', value: booking.slotLabel },
-    booking.place && { label: 'Place', value: booking.place },
     { label: 'Total', value: `Rs ${booking.price}`, bold: true },
   ].filter(Boolean);
 

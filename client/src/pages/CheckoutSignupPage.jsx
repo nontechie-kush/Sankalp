@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { api } from '../lib/api';
-import { setStoredUser } from '../lib/auth';
+import { getStoredUser, setStoredUser, tokenPayload } from '../lib/auth';
 import { useBooking } from '../context/BookingContext';
 
 export default function CheckoutSignupPage() {
@@ -14,16 +14,43 @@ export default function CheckoutSignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (!booking.phone) { navigate('/checkout/verify'); return null; }
+  useEffect(() => {
+    const user = getStoredUser();
+    if (user?.name) setName(user.name);
+    if (user?.gotra) setGotra(user.gotra);
+    if (user?.sankalpLocation) setPlace(user.sankalpLocation);
+
+    api.me().then((d) => {
+      if (!d.success || !d.user) return;
+      if (d.user.name) setName(d.user.name);
+      if (d.user.gotra) setGotra(d.user.gotra);
+      if (d.user.sankalpLocation) setPlace(d.user.sankalpLocation);
+      update({
+        phone: d.user.phone || booking.phone,
+        userName: d.user.name || booking.userName,
+        gotra: d.user.gotra || booking.gotra,
+        place: d.user.sankalpLocation || booking.place,
+      });
+    }).catch(() => {});
+  }, []);
+
+  if (!booking.phone && !tokenPayload()?.phone) { navigate('/checkout/verify'); return null; }
 
   async function submit() {
     if (name.trim().length < 2) { setError('Please enter your full name'); return; }
     setLoading(true); setError('');
-    const d = await api.saveProfile(name.trim(), gotra.trim());
+    const d = await api.saveProfile(name.trim(), gotra.trim(), {
+      sankalpLocation: place.trim(),
+    });
     setLoading(false);
     if (!d.success) { setError(d.error || 'Could not save. Try again.'); return; }
     if (d.user) setStoredUser(d.user);
-    update({ userName: name.trim(), place: place.trim() });
+    update({
+      phone: d.user?.phone || booking.phone || tokenPayload()?.phone || '',
+      userName: name.trim(),
+      gotra: gotra.trim(),
+      place: place.trim(),
+    });
     navigate('/checkout/payment');
   }
 
@@ -54,7 +81,7 @@ export default function CheckoutSignupPage() {
             </div>
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, fontWeight: 600, marginBottom: 8 }}>One last step</h2>
             <p style={{ fontSize: 14, color: 'var(--text-3)', maxWidth: 340, margin: '0 auto' }}>
-              The pandit needs these details to perform the sankalp in your name.
+              These details help the pandit take the sankalp correctly. We save them so you do not have to refill them next time.
             </p>
           </div>
 
@@ -75,7 +102,7 @@ export default function CheckoutSignupPage() {
 
           <div className="field">
             <label className="field-label">
-              Gotra <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(optional)</span>
+              Gotra <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(recommended)</span>
             </label>
             <input
               className="field-input"
@@ -84,21 +111,22 @@ export default function CheckoutSignupPage() {
               value={gotra}
               onChange={e => setGotra(e.target.value)}
             />
-            <div className="field-hint">The pandit will mention your gotra in the sankalp.</div>
+            <div className="field-hint">If you do not know it, you can leave this blank.</div>
           </div>
 
           <div className="field">
             <label className="field-label">
-              Place <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(optional)</span>
+              Current city / location <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(recommended)</span>
             </label>
             <input
               className="field-input"
               type="text"
-              placeholder="e.g. Delhi, Mumbai"
+              autoComplete="address-level2"
+              placeholder="e.g. Gurugram, Delhi"
               value={place}
               onChange={e => setPlace(e.target.value)}
             />
-            <div className="field-hint">Your city or location, included in the sankalp.</div>
+            <div className="field-hint">This is used only for the ritual sankalp, not pandit matching.</div>
           </div>
         </div>
       </main>

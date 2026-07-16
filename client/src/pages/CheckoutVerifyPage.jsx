@@ -38,6 +38,19 @@ export default function CheckoutVerifyPage() {
   const timerRef = useRef(null);
   const boxRefs = useRef([]);
 
+  function needsRitualDetails(user) {
+    return !user?.name || !user?.gotra || !user?.sankalpLocation;
+  }
+
+  function applyUserToBooking(user) {
+    update({
+      phone: user?.phone || '',
+      userName: user?.name || '',
+      gotra: user?.gotra || '',
+      place: user?.sankalpLocation || '',
+    });
+  }
+
   function phoneIsValid(value) {
     const trimmed = value.trim();
     const digits = trimmed.replace(/\D/g, '');
@@ -47,8 +60,25 @@ export default function CheckoutVerifyPage() {
 
   // If already logged in skip to payment
   useEffect(() => {
+    let cancelled = false;
     const p = tokenPayload();
-    if (p?.phone) { update({ phone: p.phone }); navigate('/checkout/payment'); }
+    if (!p?.phone) return undefined;
+
+    update({ phone: p.phone });
+    api.me()
+      .then((d) => {
+        if (cancelled) return;
+        const user = d.success && d.user ? d.user : p;
+        applyUserToBooking(user);
+        navigate(needsRitualDetails(user) ? '/checkout/signup' : '/checkout/payment');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        applyUserToBooking(p);
+        navigate('/checkout/signup');
+      });
+
+    return () => { cancelled = true; };
   }, []);
 
   // Redirect if no booking
@@ -103,8 +133,8 @@ export default function CheckoutVerifyPage() {
     });
     setToken(d.token);
     setStoredUser(d.user);
-    update({ phone: d.user.phone, userName: d.user.name || '' });
-    if (d.isNew) navigate('/checkout/signup');
+    applyUserToBooking(d.user);
+    if (d.isNew || needsRitualDetails(d.user)) navigate('/checkout/signup');
     else navigate('/checkout/payment');
   }
 
