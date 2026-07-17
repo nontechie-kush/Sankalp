@@ -4,6 +4,7 @@ import { RITUALS, getDeliveryDate } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
 import { trackEvent } from '../lib/analytics';
 import { applyBackendPrices, loadBackendPriceMap } from '../lib/catalogPrices';
+import { tokenPayload } from '../lib/auth';
 
 const FAQS = [
   { q: 'So, how does this actually work?', a: 'You choose your moment, we find a verified pandit and schedule the ritual at an auspicious muhurat. You receive a confirmation when the ritual is done.' },
@@ -150,22 +151,31 @@ function ShieldCheckIcon() {
   );
 }
 
-function HomeNav({ onSignIn }) {
+function HomeNav({ user, onSignIn, onBookings }) {
+  const initial = user?.name?.[0]?.toUpperCase() || (user ? 'U' : null);
+
   return (
     <nav style={styles.nav}>
       <strong style={styles.wordmark}>Sankkalp</strong>
-      <button type="button" style={styles.signInButton} onClick={onSignIn}>Sign in</button>
+      {!user ? (
+        <button type="button" style={styles.signInButton} onClick={onSignIn}>Sign in</button>
+      ) : (
+        <div style={styles.navUserActions}>
+          <button type="button" style={styles.bookingsButton} onClick={onBookings}>My bookings</button>
+          <button type="button" style={styles.navAvatar} onClick={onBookings} aria-label="Open my bookings">{initial}</button>
+        </div>
+      )}
     </nav>
   );
 }
 
-function Hero() {
+function Hero({ onBookNow }) {
   return (
     <section style={styles.hero}>
       <p style={styles.eyebrow}>SANKKALP BY TATHASTU</p>
       <h1 style={styles.h1}>Because some moments deserve more than luck.</h1>
       <p style={styles.heroCopy}>Verified pandits perform ritual on your behalf. Get ritual video delivered online with prasad delivered on doorstep.</p>
-      <a href="#browse" style={styles.heroCta} onClick={() => trackEvent('hero_cta_clicked', { destination: 'browse' })}>Book Now →</a>
+      <button type="button" style={styles.heroCta} onClick={onBookNow}>Book Now →</button>
     </section>
   );
 }
@@ -481,14 +491,14 @@ function FaqSection({ openFaq, setOpenFaq }) {
   );
 }
 
-function StickyBookBar({ startingPrice }) {
+function StickyBookBar({ startingPrice, onBookNow }) {
   return (
     <div style={styles.stickyBar}>
       <div>
         <div style={styles.stickyLabel}>From</div>
         <div style={styles.stickyPrice}>₹{startingPrice}</div>
       </div>
-      <a href="#browse" style={styles.stickyButton} onClick={() => trackEvent('sticky_book_now_clicked', { destination: 'browse' })}>Book now</a>
+      <button type="button" style={styles.stickyButton} onClick={onBookNow}>Book now</button>
     </div>
   );
 }
@@ -498,6 +508,7 @@ export default function HomePage() {
   const { update } = useBooking();
   const [openFaq, setOpenFaq] = useState(null);
   const [rituals, setRituals] = useState(RITUALS);
+  const [user, setUser] = useState(() => tokenPayload());
 
   useEffect(() => {
     let cancelled = false;
@@ -507,6 +518,16 @@ export default function HomePage() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const refreshUser = () => setUser(tokenPayload());
+    window.addEventListener('storage', refreshUser);
+    window.addEventListener('focus', refreshUser);
+    return () => {
+      window.removeEventListener('storage', refreshUser);
+      window.removeEventListener('focus', refreshUser);
+    };
   }, []);
 
   const startingPrice = useMemo(() => {
@@ -547,11 +568,21 @@ export default function HomePage() {
     navigate(`/ritual/${ritualId}/${moment.id}`);
   }
 
+  function handleBookNow(source = 'homepage_book_now') {
+    trackEvent(source, { destination: 'browse' });
+    const browse = document.getElementById('browse');
+    if (browse) {
+      browse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    window.location.hash = 'browse';
+  }
+
   return (
     <div style={styles.page}>
-      <HomeNav onSignIn={() => navigate('/signin')} />
+      <HomeNav user={user} onSignIn={() => navigate('/signin')} onBookings={() => navigate('/bookings')} />
       <main style={styles.main}>
-        <Hero />
+        <Hero onBookNow={() => handleBookNow('hero_cta_clicked')} />
         <RitualGrid rituals={rituals} onRitualClick={handleRitualClick} />
         <HowItWorks />
         <SocialProof />
@@ -560,7 +591,7 @@ export default function HomePage() {
         <FaqSection openFaq={openFaq} setOpenFaq={setOpenFaq} />
       </main>
       <footer style={styles.footer}>Sankkalp by Tathastu — rituals, sorted</footer>
-      <StickyBookBar startingPrice={startingPrice} />
+      <StickyBookBar startingPrice={startingPrice} onBookNow={() => handleBookNow('sticky_book_now_clicked')} />
     </div>
   );
 }
@@ -609,6 +640,33 @@ const styles = {
     border: 0,
     padding: 0,
   },
+  navUserActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  bookingsButton: {
+    color: 'var(--ink)',
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 100,
+    padding: '7px 12px',
+    fontSize: 12,
+    fontWeight: 700,
+  },
+  navAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: '50%',
+    border: '1px solid rgba(181,101,74,.28)',
+    background: '#F2ECE3',
+    color: 'var(--accent)',
+    fontSize: 12,
+    fontWeight: 800,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   main: {
     maxWidth: 520,
     margin: '0 auto',
@@ -649,7 +707,7 @@ const styles = {
     fontWeight: 600,
     padding: '13px 20px',
     borderRadius: 8,
-    textDecoration: 'none',
+    border: 0,
   },
   section: {
     marginBottom: 28,
@@ -1078,6 +1136,5 @@ const styles = {
     padding: '10px 18px',
     fontSize: 13,
     fontWeight: 700,
-    textDecoration: 'none',
   },
 };
