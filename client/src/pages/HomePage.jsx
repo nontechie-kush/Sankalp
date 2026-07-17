@@ -80,7 +80,15 @@ const RECENT_BOOKINGS = [
 const TRUST_BADGES = ['Verified pandits', 'Video proof', 'Secure payment', 'Live status tracking'];
 
 const TESTIMONIALS = [
-  { bg: 'linear-gradient(180deg,#D4A882 0%,#6e3c20 100%)', name: 'Meera, 34', after: 'after Nazar Badha', dur: '0:30' },
+  {
+    type: 'video',
+    src: '/testimonials/testimonial_sukh.mp4',
+    bg: 'linear-gradient(180deg,#D4A882 0%,#6e3c20 100%)',
+    name: 'Sukhmani Kaur',
+    after: 'Raksha Kavach · Gurgaon',
+    quote: 'Booked before sharing her dream job offer letter.',
+    dur: '0:33',
+  },
   { bg: 'linear-gradient(180deg,#C4B890 0%,#6a5a30 100%)', name: 'Rohan, 29', after: 'after Dhan Aagman', dur: '0:28' },
   { bg: 'linear-gradient(180deg,#C8A09A 0%,#6a3030 100%)', name: 'Priya, 26', after: 'after Prem Setu', dur: '0:31' },
 ];
@@ -361,20 +369,49 @@ function SocialProof() {
 }
 
 function Testimonials() {
+  const [activeVideo, setActiveVideo] = useState(null);
+
   return (
     <section style={styles.section}>
       <SectionHeading eyebrow="Testimonials" title="Real ones, real changes" />
       <div style={styles.testimonialScroller}>
         {TESTIMONIALS.map((item) => (
-          <div key={item.name} style={{ ...styles.testimonialCard, background: item.bg }}>
-            <span style={styles.playButton}>
-              <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-            </span>
-            <span style={styles.testimonialOverlay}>
-              <span style={styles.testimonialDuration}>{item.dur}</span>
-              <span style={styles.testimonialName}>{item.name}</span>
-              <span style={styles.testimonialAfter}>{item.after}</span>
-            </span>
+          <div
+            key={item.name}
+            role={item.type === 'video' ? 'button' : 'img'}
+            tabIndex={item.type === 'video' ? 0 : undefined}
+            style={{ ...styles.testimonialCard, background: item.bg }}
+            onClick={() => item.type === 'video' && setActiveVideo(item.name)}
+            onKeyDown={(event) => {
+              if (item.type === 'video' && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                setActiveVideo(item.name);
+              }
+            }}
+            aria-label={item.type === 'video' ? `Play testimonial from ${item.name}` : `${item.name} testimonial`}
+          >
+            {item.type === 'video' && activeVideo === item.name ? (
+              <video
+                src={item.src}
+                style={styles.testimonialVideo}
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <span style={styles.playButton}>
+                <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+              </span>
+            )}
+            {activeVideo !== item.name ? (
+              <span style={styles.testimonialOverlay}>
+                <span style={styles.testimonialDuration}>{item.dur}</span>
+                <span style={styles.testimonialName}>{item.name}</span>
+                <span style={styles.testimonialAfter}>{item.after}</span>
+                {item.quote ? <span style={styles.testimonialQuote}>{item.quote}</span> : null}
+              </span>
+            ) : null}
           </div>
         ))}
       </div>
@@ -925,10 +962,13 @@ const styles = {
   testimonialCard: {
     flexShrink: 0,
     width: 118,
-    height: 188,
+    height: 210,
     borderRadius: 12,
     position: 'relative',
     overflow: 'hidden',
+    border: 0,
+    padding: 0,
+    textAlign: 'left',
   },
   playButton: {
     position: 'absolute',
@@ -967,6 +1007,20 @@ const styles = {
     display: 'block',
     color: 'rgba(255,255,255,.82)',
     fontSize: 10,
+  },
+  testimonialQuote: {
+    display: 'block',
+    color: 'rgba(255,255,255,.9)',
+    fontSize: 9,
+    lineHeight: 1.2,
+    marginTop: 3,
+  },
+  testimonialVideo: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+    background: '#1d120c',
   },
   searchBox: {
     display: 'flex',
