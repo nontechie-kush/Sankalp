@@ -83,6 +83,7 @@ const TESTIMONIALS = [
   {
     type: 'video',
     src: '/testimonials/testimonial_sukh.mp4',
+    poster: '/testimonials/testimonial_sukh_poster.svg',
     bg: 'linear-gradient(180deg,#D4A882 0%,#6e3c20 100%)',
     name: 'Sukhmani Kaur',
     after: 'Raksha Kavach · Gurgaon',
@@ -393,6 +394,7 @@ function Testimonials() {
             {item.type === 'video' && activeVideo === item.name ? (
               <video
                 src={item.src}
+                poster={item.poster}
                 style={styles.testimonialVideo}
                 controls
                 autoPlay
@@ -400,9 +402,14 @@ function Testimonials() {
                 preload="metadata"
               />
             ) : (
-              <span style={styles.playButton}>
-                <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-              </span>
+              <>
+                {item.poster ? (
+                  <img src={item.poster} alt="" style={styles.testimonialPoster} loading="lazy" />
+                ) : null}
+                <span style={styles.playButton}>
+                  <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                </span>
+              </>
             )}
             {activeVideo !== item.name ? (
               <span style={styles.testimonialOverlay}>
@@ -969,6 +976,12 @@ const styles = {
     border: 0,
     padding: 0,
     textAlign: 'left',
+  },
+  testimonialPoster: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
   },
   playButton: {
     position: 'absolute',

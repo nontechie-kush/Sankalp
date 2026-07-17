@@ -1,0 +1,53 @@
+<svg width="540" height="960" viewBox="0 0 540 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="270" y1="0" x2="270" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7E3D2"/>
+      <stop offset="0.46" stop-color="#C9744E"/>
+      <stop offset="1" stop-color="#4A2314"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(270 365) rotate(90) scale(260 230)">
+      <stop stop-color="#FFF1CB" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#FFF1CB" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="24" y="78" width="492" height="806" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#2B1208" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="540" height="960" rx="42" fill="url(#bg)"/>
+  <rect width="540" height="960" rx="42" fill="url(#glow)"/>
+
+  <g opacity="0.24">
+    <circle cx="88" cy="155" r="7" fill="#FFF6E9"/>
+    <circle cx="466" cy="238" r="10" fill="#FFF6E9"/>
+    <circle cx="438" cy="638" r="6" fill="#FFF6E9"/>
+    <circle cx="106" cy="720" r="9" fill="#FFF6E9"/>
+    <path d="M96 334C180 247 310 244 448 325" stroke="#FFF6E9" stroke-width="5" stroke-linecap="round"/>
+    <path d="M122 376C204 315 314 313 420 374" stroke="#FFF6E9" stroke-width="3" stroke-linecap="round" stroke-dasharray="10 18"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="56" y="112" width="428" height="724" rx="34" fill="#FFF9EF" fill-opacity="0.94"/>
+
+    <rect x="96" y="158" width="348" height="416" rx="28" fill="#F5E1CF"/>
+    <path d="M96 158H444V426C390 388 333 381 272 411C205 444 150 430 96 385V158Z" fill="#B85E37"/>
+    <path d="M96 158H444V300C388 270 326 265 260 292C196 318 145 312 96 286V158Z" fill="#D89A74" opacity="0.7"/>
+
+    <circle cx="270" cy="360" r="78" fill="#FFF8EA" fill-opacity="0.92"/>
+    <path d="M270 294C290 318 301 340 301 360C301 382 287 398 270 398C253 398 239 382 239 360C239 340 250 318 270 294Z" fill="#B75E3A"/>
+    <path d="M270 326C282 342 289 354 289 366C289 379 281 388 270 388C259 388 251 379 251 366C251 354 258 342 270 326Z" fill="#FFEBC5"/>
+    <path d="M236 454C256 469 284 469 304 454" stroke="#7D4A2F" stroke-width="7" stroke-linecap="round"/>
+
+    <rect x="122" y="618" width="296" height="52" rx="26" fill="#F2E6D8"/>
+    <text x="270" y="651" text-anchor="middle" fill="#7D4A2F" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">Raksha Kavach</text>
+
+    <text x="96" y="724" fill="#2B211B" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="800">Sukhmani Kaur</text>
+    <text x="96" y="768" fill="#6F6258" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="600">Gurgaon</text>
+    <text x="96" y="810" fill="#2B211B" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700">Before sharing her dream</text>
+    <text x="96" y="843" fill="#2B211B" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700">job offer letter.</text>
+  </g>
+
+  <circle cx="270" cy="476" r="56" fill="black" fill-opacity="0.32"/>
+  <circle cx="270" cy="476" r="54" stroke="white" stroke-opacity="0.36" stroke-width="2"/>
+  <path d="M255 447V505L304 476L255 447Z" fill="white"/>
+</svg>
