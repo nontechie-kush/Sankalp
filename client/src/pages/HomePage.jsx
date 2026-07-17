@@ -44,22 +44,27 @@ const RITUAL_ORDER = ['nb', 'rk', 'ps', 'da'];
 const HOW_IT_WORKS_STEPS = [
   {
     label: 'Pick Moment',
+    start: 0,
     desc: 'Choose the ritual and the moment that matters — exam, interview, wedding, travel or anything else.',
   },
   {
     label: 'Book & Pay',
-    desc: 'Complete your booking and payment — the pandit may ask for your name, gotra, birth place and a few extra details to perform the ritual.',
+    start: 4,
+    desc: 'Complete your booking and payment — the pandit may ask for your name, gotra, birth place to perform the ritual.',
   },
   {
     label: 'Pandit performs ritual',
+    start: 8,
     desc: 'A verified pandit performs the ritual in your name at the chosen muhurat, usually within 4–12 hours of booking.',
   },
   {
     label: 'Receive ritual video',
-    desc: 'A recording of the ritual is sent to you on the app and WhatsApp so you can watch it any time.',
+    start: 11,
+    desc: 'A recording of the ritual is sent to you on WhatsApp so you can watch it any time.',
   },
   {
     label: 'Doorstep prasad',
+    start: 14,
     desc: 'Prasadam and kaala dhaaga are delivered to your doorstep — these are optional, not mandatory.',
   },
 ];
@@ -80,6 +85,17 @@ const TESTIMONIALS = [
 ];
 
 const FILTERS = ['All', 'Career', 'Exams', 'Travel', 'Money', 'Love', 'Protection'];
+
+function getHowItWorksStep(currentTime) {
+  let activeStep = 0;
+  for (let index = HOW_IT_WORKS_STEPS.length - 1; index >= 0; index -= 1) {
+    if (currentTime >= HOW_IT_WORKS_STEPS[index].start) {
+      activeStep = index;
+      break;
+    }
+  }
+  return activeStep;
+}
 
 function categoryForMoment(ritual, groupName, momentName) {
   const text = `${ritual.name} ${groupName} ${momentName}`.toLowerCase();
@@ -228,7 +244,7 @@ function HowItWorks() {
     video.play().catch(() => {});
 
     const handleTimeUpdate = () => {
-      const nextStep = Math.floor(video.currentTime / 4) % HOW_IT_WORKS_STEPS.length;
+      const nextStep = getHowItWorksStep(video.currentTime);
       setHiwStep(Number.isFinite(nextStep) ? nextStep : 0);
     };
 
@@ -240,7 +256,7 @@ function HowItWorks() {
 
   return (
     <section style={styles.section}>
-      <SectionHeading eyebrow="How it works" title="Five steps, nothing to coordinate" />
+      <SectionHeading eyebrow="How it works" title="Simple steps to get real blessings" />
       <div ref={videoWrapRef} style={styles.hiwVideoWrap}>
         <video
           ref={videoRef}
@@ -255,29 +271,32 @@ function HowItWorks() {
         />
       </div>
       <div style={styles.hiwTracker} aria-label={`Step ${hiwStep + 1}: ${current.label}`}>
-        <span style={styles.hiwLine} />
         {HOW_IT_WORKS_STEPS.map((step, index) => {
           const active = index === hiwStep;
           return (
             <button
               key={step.label}
               type="button"
-              style={styles.hiwNode}
+              style={{ ...styles.hiwNode, background: active ? 'var(--accent)' : 'var(--border)', color: active ? '#fff' : 'var(--ink-3)' }}
+              aria-label={`Show step ${index + 1}: ${step.label}`}
+              aria-pressed={active}
               onClick={() => {
-                if (videoRef.current) videoRef.current.currentTime = index * 4;
+                if (videoRef.current) {
+                  videoRef.current.currentTime = step.start;
+                  videoRef.current.play().catch(() => {});
+                }
                 setHiwStep(index);
               }}
             >
-              <span style={{ ...styles.hiwDot, background: active ? 'var(--accent)' : 'var(--border)' }} />
-              <span style={{ ...styles.hiwLabel, color: active ? 'var(--ink)' : 'var(--ink-3)', fontWeight: active ? 700 : 500 }}>{step.label}</span>
+              {index + 1}
             </button>
           );
         })}
       </div>
-      <p style={styles.hiwCopy}>
-        <strong style={{ color: 'var(--ink)' }}>Step {hiwStep + 1} · {current.label}. </strong>
-        {current.desc}
-      </p>
+      <div style={styles.hiwStepCard}>
+        <h3 style={styles.hiwStepTitle}>{current.label}</h3>
+        <p style={styles.hiwStepDesc}>{current.desc}</p>
+      </div>
     </section>
   );
 }
@@ -709,47 +728,40 @@ const styles = {
     display: 'block',
   },
   hiwTracker: {
-    position: 'relative',
     display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  hiwLine: {
-    position: 'absolute',
-    top: 5,
-    left: 10,
-    right: 10,
-    height: 1,
-    background: 'var(--border)',
+    justifyContent: 'center',
+    gap: 9,
+    marginBottom: 12,
   },
   hiwNode: {
-    textAlign: 'center',
-    position: 'relative',
-    flex: 1,
-    minWidth: 0,
-    padding: 0,
-    background: 'transparent',
-    border: 0,
-  },
-  hiwDot: {
-    display: 'block',
-    width: 11,
-    height: 11,
+    width: 26,
+    height: 26,
     borderRadius: '50%',
-    margin: '0 auto 8px',
-    transition: 'background .18s ease',
+    border: 0,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 12,
+    fontWeight: 800,
+    transition: 'background .18s ease, color .18s ease, transform .18s ease',
   },
-  hiwLabel: {
-    display: 'block',
-    fontSize: 10,
-    lineHeight: 1.15,
-    transition: 'color .18s ease',
+  hiwStepCard: {
+    background: 'var(--card)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    padding: 14,
   },
-  hiwCopy: {
-    textAlign: 'center',
+  hiwStepTitle: {
+    color: 'var(--ink)',
+    fontSize: 13.5,
+    fontWeight: 700,
+    lineHeight: 1.2,
+    margin: '0 0 5px',
+  },
+  hiwStepDesc: {
     fontSize: 12.5,
     color: 'var(--ink-2)',
-    lineHeight: 1.55,
+    lineHeight: 1.5,
     margin: 0,
   },
   socialCard: {
