@@ -396,7 +396,18 @@ function Testimonials() {
                 src={item.src}
                 poster={item.poster}
                 style={styles.testimonialVideo}
-                controls
+                controlsList="nodownload noplaybackrate"
+                disablePictureInPicture
+                disableRemotePlayback
+                onContextMenu={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (event.currentTarget.paused) {
+                    event.currentTarget.play().catch(() => {});
+                  } else {
+                    event.currentTarget.pause();
+                  }
+                }}
                 autoPlay
                 playsInline
                 preload="metadata"
