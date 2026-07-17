@@ -5,6 +5,7 @@ import { trackPageView } from './lib/analytics';
 import './styles/globals.css';
 
 import HomePage from './pages/HomePage';
+import MomentsPage from './pages/MomentsPage';
 import RitualPage from './pages/RitualPage';
 import SignInPage from './pages/SignInPage';
 import CheckoutSlotPage from './pages/CheckoutSlotPage';
@@ -55,6 +56,7 @@ export default function App() {
         <AnalyticsPageView />
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/moments" element={<MomentsPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/ritual/:ritualId" element={<RitualPage />} />
           <Route path="/ritual/:ritualId/:momentId" element={<RitualPage />} />

@@ -569,13 +569,8 @@ export default function HomePage() {
   }
 
   function handleBookNow(source = 'homepage_book_now') {
-    trackEvent(source, { destination: 'browse' });
-    const browse = document.getElementById('browse');
-    if (browse) {
-      browse.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-    window.location.hash = 'browse';
+    trackEvent(source, { destination: 'moments' });
+    navigate('/moments');
   }
 
   return (

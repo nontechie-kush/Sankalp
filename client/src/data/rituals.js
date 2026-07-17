@@ -120,6 +120,7 @@ export const RITUALS = [
           { id: 'nb-nv',  name: 'New vehicle',           why: 'Remove envy before the first drive', price: 149, pop: false, ic: 'car'       },
           { id: 'nb-bh',  name: 'Business / home nazar', why: 'Protect what you\'ve built',         price: 149, pop: true,  ic: 'shop'      },
           { id: 'nb-hf',  name: 'Health / family',       why: 'Clear heavy energy from loved ones', price: 149, pop: false, ic: 'health'    },
+          { id: 'nb-fo',  name: 'Feeling off lately',    why: 'Reset when nothing feels right',      price: 149, pop: true,  ic: 'mood'      },
         ],
       },
     ],
