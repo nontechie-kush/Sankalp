@@ -5,7 +5,7 @@ import { RITUALS, getDeliveryDate } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
 import { trackEvent } from '../lib/analytics';
 import { applyBackendPrices, loadBackendPriceMap } from '../lib/catalogPrices';
-import { tokenPayload } from '../lib/auth';
+import { tokenPayload, clearToken } from '../lib/auth';
 
 const FAQS = [
   { q: 'So, how does this actually work?', a: 'You choose your moment, we find a verified pandit and schedule the ritual at an auspicious muhurat. You receive a confirmation when the ritual is done.' },
@@ -161,8 +161,18 @@ function ShieldCheckIcon() {
   );
 }
 
-function HomeNav({ user, onSignIn, onBookings }) {
+function HomeNav({ user, onSignIn, onBookings, onSignOut }) {
   const initial = user?.name?.[0]?.toUpperCase() || (user ? 'U' : null);
+  const [open, setOpen] = useState(false);
+  const dropRef = useRef(null);
+
+  useEffect(() => {
+    function handleOutside(e) {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
 
   return (
     <nav style={styles.nav}>
@@ -172,7 +182,43 @@ function HomeNav({ user, onSignIn, onBookings }) {
       ) : (
         <div style={styles.navUserActions}>
           <button type="button" style={styles.bookingsButton} onClick={onBookings}>My bookings</button>
-          <button type="button" style={styles.navAvatar} onClick={onBookings} aria-label="Open my bookings">{initial}</button>
+          <div style={{ position: 'relative' }} ref={dropRef}>
+            <button
+              type="button"
+              style={styles.navAvatar}
+              onClick={() => setOpen((o) => !o)}
+              aria-label="Account menu"
+            >
+              {initial}
+            </button>
+            {open && (
+              <div style={{
+                position: 'absolute', right: 0, top: 'calc(100% + 8px)',
+                background: '#fff', border: '1px solid var(--border)',
+                borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,.12)',
+                minWidth: 180, zIndex: 200, overflow: 'hidden',
+              }}>
+                <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+                  {user?.name && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>{user.name}</div>}
+                  <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{user?.phone}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); onBookings(); }}
+                  style={{ width: '100%', textAlign: 'left', padding: '12px 14px', fontSize: 13, color: 'var(--ink)', borderTop: 0, borderLeft: 0, borderRight: 0, borderBottom: '1px solid var(--border)', background: 'none', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                >
+                  My bookings
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); onSignOut(); }}
+                  style={{ width: '100%', textAlign: 'left', padding: '12px 14px', fontSize: 13, color: '#C0392B', background: 'none', border: 0, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </nav>
@@ -624,6 +670,11 @@ export default function HomePage() {
     navigate(`/ritual/${ritualId}/${moment.id}`);
   }
 
+  function signOut() {
+    clearToken();
+    setUser(null);
+  }
+
   function handleBookNow(source = 'homepage_book_now') {
     trackEvent(source, { destination: 'moments' });
     navigate('/moments');
@@ -631,7 +682,7 @@ export default function HomePage() {
 
   return (
     <div style={styles.page}>
-      <HomeNav user={user} onSignIn={() => navigate('/signin')} onBookings={() => navigate('/bookings')} />
+      <HomeNav user={user} onSignIn={() => navigate('/signin')} onBookings={() => navigate('/bookings')} onSignOut={signOut} />
       <main style={styles.main}>
         <Hero onBookNow={() => handleBookNow('hero_cta_clicked')} />
         <RitualGrid rituals={rituals} onRitualClick={handleRitualClick} />
