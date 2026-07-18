@@ -463,37 +463,48 @@ function Testimonials() {
       {/* Floating video modal */}
       {modalItem && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={() => setModalItem(null)}
         >
           <div
-            style={{ width: '100%', maxWidth: 360, borderRadius: 16, overflow: 'hidden', position: 'relative', background: '#1a0f07', boxShadow: '0 24px 60px rgba(0,0,0,.5)' }}
+            style={{ width: '100%', maxWidth: 360, borderRadius: 16, overflow: 'hidden', background: '#1a0f07', boxShadow: '0 24px 60px rgba(0,0,0,.6)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setModalItem(null)}
-              style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,.5)', border: 0, color: '#fff', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
-              aria-label="Close"
-            >
-              ×
-            </button>
+            {/* Header — name + close button, no overlap with video controls */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: '#2C1A0E' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{modalItem.name}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', marginTop: 2 }}>{modalItem.after}</div>
+              </div>
+              <button
+                onClick={() => setModalItem(null)}
+                style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,.12)', border: 0, color: '#fff', fontSize: 20, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Video — controls only at bottom, nothing overlapping */}
             <video
               src={modalItem.src}
               poster={modalItem.poster}
-              style={{ width: '100%', display: 'block', maxHeight: '70vh', objectFit: 'contain', background: '#1a0f07' }}
+              style={{ width: '100%', display: 'block', maxHeight: '65vh', objectFit: 'contain', background: '#1a0f07' }}
               controls
-              controlsList="nodownload noplaybackrate"
+              controlsList="nodownload noplaybackrate nofullscreen"
               disablePictureInPicture
               disableRemotePlayback
               autoPlay
               playsInline
               preload="metadata"
             />
-            <div style={{ padding: '12px 16px 16px', background: 'linear-gradient(to bottom, #1a0f07, #2C1A0E)' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{modalItem.name}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginTop: 2 }}>{modalItem.after}</div>
-              {modalItem.quote && <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', marginTop: 6, fontStyle: 'italic' }}>"{modalItem.quote}"</div>}
-            </div>
+
+            {/* Quote footer */}
+            {modalItem.quote && (
+              <div style={{ padding: '10px 14px 14px', background: '#2C1A0E' }}>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', fontStyle: 'italic' }}>"{modalItem.quote}"</div>
+              </div>
+            )}
           </div>
         </div>
       )}
