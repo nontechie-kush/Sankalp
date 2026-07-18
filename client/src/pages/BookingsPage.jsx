@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import Logo from '../components/Logo';
-import { tokenPayload } from '../lib/auth';
+import { tokenPayload, clearToken } from '../lib/auth';
 
 const S = {
   page: {
@@ -223,6 +223,23 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState({ upcoming: [], past: [] });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('upcoming');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dropRef = useRef(null);
+
+  useEffect(() => {
+    function handleOutside(e) {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
+
+  function signOut() {
+    clearToken();
+    navigate('/');
+  }
+
+  const initial = user?.name?.[0]?.toUpperCase() || (user ? 'U' : null);
 
   useEffect(() => {
     if (!tokenPayload()) { navigate('/signin'); return; }
@@ -243,7 +260,29 @@ export default function BookingsPage() {
           Home
         </button>
         <Logo noLink />
-        <div style={{ width: 52 }} />
+        <div style={{ position: 'relative' }} ref={dropRef}>
+          {initial && (
+            <button
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              style={{ width: 30, height: 30, borderRadius: '50%', border: '1px solid rgba(181,101,74,.28)', background: '#F2ECE3', color: 'var(--accent)', fontSize: 12, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              aria-label="Account menu"
+            >
+              {initial}
+            </button>
+          )}
+          {menuOpen && (
+            <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: '#fff', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 8px 24px rgba(0,0,0,.12)', minWidth: 180, zIndex: 200, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+                {user?.name && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>{user.name}</div>}
+                <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{user?.phone}</div>
+              </div>
+              <button type="button" onClick={signOut} style={{ width: '100%', textAlign: 'left', padding: '12px 14px', fontSize: 13, color: '#C0392B', background: 'none', border: 0, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={S.wrap}>
