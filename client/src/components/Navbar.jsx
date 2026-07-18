@@ -66,8 +66,18 @@ export default function Navbar() {
                     <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{user?.phone}</div>
                   </div>
                 </div>
+                <button onClick={() => { setOpen(false); navigate('/profile'); }} style={{
+                  width: '100%', textAlign: 'left', padding: '12px 16px',
+                  fontSize: 14, color: 'var(--text)', borderBottom: '1px solid var(--border)',
+                  background: 'none', display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" width="16" height="16">
+                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                  </svg>
+                  Profile
+                </button>
                 <button onClick={() => { setOpen(false); navigate('/bookings'); }} style={{
-                  width: '100%', textAlign: 'left', padding: '13px 16px',
+                  width: '100%', textAlign: 'left', padding: '12px 16px',
                   fontSize: 14, color: 'var(--text)', borderBottom: '1px solid var(--border)',
                   background: 'none', display: 'flex', alignItems: 'center', gap: 10,
                 }}>

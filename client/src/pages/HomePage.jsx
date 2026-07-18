@@ -203,6 +203,13 @@ function HomeNav({ user, onSignIn, onBookings, onSignOut }) {
                 </div>
                 <button
                   type="button"
+                  onClick={() => { setOpen(false); navigate('/profile'); }}
+                  style={{ width: '100%', textAlign: 'left', padding: '12px 14px', fontSize: 13, color: 'var(--ink)', borderTop: 0, borderLeft: 0, borderRight: 0, borderBottom: '1px solid var(--border)', background: 'none', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                >
+                  Profile
+                </button>
+                <button
+                  type="button"
                   onClick={() => { setOpen(false); onBookings(); }}
                   style={{ width: '100%', textAlign: 'left', padding: '12px 14px', fontSize: 13, color: 'var(--ink)', borderTop: 0, borderLeft: 0, borderRight: 0, borderBottom: '1px solid var(--border)', background: 'none', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
                 >

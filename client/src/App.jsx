@@ -14,6 +14,7 @@ import CheckoutSignupPage from './pages/CheckoutSignupPage';
 import CheckoutPaymentPage from './pages/CheckoutPaymentPage';
 import ConfirmationPage from './pages/ConfirmationPage';
 import BookingsPage from './pages/BookingsPage';
+import ProfilePage from './pages/ProfilePage';
 
 function NotFound() {
   return (
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/checkout/payment" element={<CheckoutPaymentPage />} />
           <Route path="/booking/:ref" element={<ConfirmationPage />} />
           <Route path="/bookings" element={<BookingsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BookingProvider>

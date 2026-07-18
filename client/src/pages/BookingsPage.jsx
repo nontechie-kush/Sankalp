@@ -277,6 +277,9 @@ export default function BookingsPage() {
                 {user?.name && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>{user.name}</div>}
                 <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{user?.phone}</div>
               </div>
+              <button type="button" onClick={() => { setMenuOpen(false); navigate('/profile'); }} style={{ width: '100%', textAlign: 'left', padding: '12px 14px', fontSize: 13, color: 'var(--ink)', background: 'none', border: 0, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                Profile
+              </button>
               <button type="button" onClick={signOut} style={{ width: '100%', textAlign: 'left', padding: '12px 14px', fontSize: 13, color: '#C0392B', background: 'none', border: 0, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 Sign out
               </button>
