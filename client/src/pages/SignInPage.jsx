@@ -1,9 +1,98 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import { api } from '../lib/api';
 import { setStoredUser, setToken, tokenPayload } from '../lib/auth';
 import { trackEvent } from '../lib/analytics';
+
+const S = {
+  page: {
+    '--bg': '#F7F5F1', '--card': '#FFFFFF', '--ink': '#191919',
+    '--ink-2': '#5C574D', '--ink-3': '#8A8378', '--accent': '#B5654A',
+    '--border': '#E4E0D5',
+    minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+    display: 'flex', flexDirection: 'column',
+  },
+  nav: {
+    height: 52, display: 'flex', alignItems: 'center', padding: '0 20px',
+    borderBottom: '1px solid var(--border)',
+    maxWidth: 520, margin: '0 auto', width: '100%',
+  },
+  wordmark: { fontSize: 15, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--ink)' },
+  main: {
+    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '32px 20px 60px',
+  },
+  card: {
+    width: '100%', maxWidth: 400,
+  },
+  iconWrap: {
+    width: 56, height: 56,
+    background: 'linear-gradient(135deg,#F2B79A,#BE6A43)',
+    borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    margin: '0 auto 20px',
+  },
+  heading: {
+    fontSize: 24, fontWeight: 700, letterSpacing: '-.01em',
+    textAlign: 'center', margin: '0 0 8px', color: 'var(--ink)',
+  },
+  sub: {
+    fontSize: 14, color: 'var(--ink-3)', textAlign: 'center',
+    margin: '0 auto 32px', maxWidth: 280, lineHeight: 1.5,
+  },
+  label: {
+    display: 'block', fontSize: 12, fontWeight: 600, letterSpacing: '.04em',
+    textTransform: 'uppercase', color: 'var(--ink-2)', marginBottom: 8,
+  },
+  fieldWrap: { marginBottom: 20 },
+  phoneRow: {
+    display: 'flex', alignItems: 'center', border: '1.5px solid var(--border)',
+    borderRadius: 12, background: '#fff', overflow: 'hidden',
+    transition: 'border-color .15s',
+  },
+  phoneCC: {
+    padding: '0 12px', fontSize: 18, color: 'var(--ink-3)',
+    borderRight: '1px solid var(--border)', height: 48,
+    display: 'flex', alignItems: 'center',
+  },
+  phoneInput: {
+    flex: 1, border: 'none', outline: 'none', padding: '0 14px',
+    fontSize: 15, color: 'var(--ink)', background: 'transparent', height: 48,
+  },
+  input: {
+    width: '100%', border: '1.5px solid var(--border)', borderRadius: 12,
+    padding: '12px 14px', fontSize: 15, color: 'var(--ink)', background: '#fff',
+    outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+    transition: 'border-color .15s',
+  },
+  hint: { fontSize: 12, color: 'var(--ink-3)', marginTop: 6 },
+  error: {
+    fontSize: 13, color: '#C0392B', marginTop: 8, fontWeight: 500,
+  },
+  btn: (disabled) => ({
+    width: '100%', padding: '14px', border: 'none', borderRadius: 12,
+    background: disabled ? 'var(--border)' : 'var(--accent)',
+    color: disabled ? 'var(--ink-3)' : '#fff',
+    fontSize: 15, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'background .15s', marginTop: 4,
+  }),
+  otpRow: {
+    display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20,
+  },
+  otpBox: (filled) => ({
+    width: 44, height: 52, border: `1.5px solid ${filled ? 'var(--accent)' : 'var(--border)'}`,
+    borderRadius: 10, fontSize: 22, fontWeight: 700, textAlign: 'center',
+    color: 'var(--ink)', background: '#fff', outline: 'none',
+    fontFamily: 'inherit', transition: 'border-color .15s',
+  }),
+  resendRow: {
+    textAlign: 'center', fontSize: 13, color: 'var(--ink-3)', marginBottom: 20,
+  },
+  resendBtn: {
+    background: 'none', border: 'none', color: 'var(--accent)',
+    fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: 0,
+  },
+};
 
 export default function SignInPage() {
   const navigate = useNavigate();
@@ -45,11 +134,7 @@ export default function SignInPage() {
     setLoading(true); setError('');
     const d = await api.sendOtp(phone);
     setLoading(false);
-    if (!d.success) {
-      trackEvent('signin_otp_send_failed');
-      setError(d.error || 'Failed to send OTP');
-      return;
-    }
+    if (!d.success) { trackEvent('signin_otp_send_failed'); setError(d.error || 'Failed to send OTP'); return; }
     trackEvent('signin_otp_sent');
     setNormalizedPhone(d.phone);
     setPhase('otp');
@@ -82,15 +167,9 @@ export default function SignInPage() {
     if (name.trim().length < 2) { setError('Enter your full name'); return; }
     trackEvent('signin_profile_save_started');
     setLoading(true); setError('');
-    const d = await api.saveProfile(name.trim(), gotra.trim(), {
-      sankalpLocation: place.trim(),
-    });
+    const d = await api.saveProfile(name.trim(), gotra.trim(), { sankalpLocation: place.trim() });
     setLoading(false);
-    if (!d.success) {
-      trackEvent('signin_profile_save_failed');
-      setError(d.error || 'Could not save. Try again.');
-      return;
-    }
+    if (!d.success) { trackEvent('signin_profile_save_failed'); setError(d.error || 'Could not save. Try again.'); return; }
     trackEvent('signin_profile_saved', { gotra_provided: Boolean(gotra.trim()) });
     if (d.user) setStoredUser(d.user);
     navigate('/bookings');
@@ -123,39 +202,45 @@ export default function SignInPage() {
 
   const otpFull = otp.every(d => d !== '');
 
+  const icon = phase === 'profile'
+    ? <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" width="26"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    : <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" width="26"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>;
+
+  const heading = phase === 'phone' ? 'Sign in / Sign up' : phase === 'otp' ? 'Enter the code' : 'Your details';
+  const subtext = phase === 'phone'
+    ? "We'll send a 6-digit code to verify your number."
+    : phase === 'otp'
+    ? <span>Sent to <strong style={{ color: 'var(--ink)' }}>{normalizedPhone}</strong></span>
+    : 'Your name lets the pandit address the sankalp correctly.';
+
   return (
-    <div className="page-wrap">
-      <Navbar />
-      <main style={{ flex: 1, paddingTop: 40, paddingBottom: 60 }}>
-        <div className="checkout-wrap">
+    <div style={S.page}>
+      {/* Minimal nav */}
+      <div style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+        <div style={S.nav}>
+          <span style={S.wordmark}>Sankkalp</span>
+        </div>
+      </div>
 
-          {/* Icon + heading */}
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ width: 60, height: 60, background: 'linear-gradient(135deg,#F2B79A,#BE6A43)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              {phase === 'profile'
-                ? <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" width="28"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                : <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" width="28"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
-              }
-            </div>
-            <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8 }}>
-              {phase === 'phone' ? 'Sign in / Sign up' : phase === 'otp' ? 'Enter the code' : 'Your details'}
-            </h2>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', maxWidth: 320, margin: '0 auto' }}>
-              {phase === 'phone' && "We'll send a 6-digit code to verify your number."}
-              {phase === 'otp' && <>Sent to <strong style={{ color: 'var(--text)' }}>{normalizedPhone}</strong></>}
-              {phase === 'profile' && 'Your name lets the pandit address the sankalp correctly.'}
-            </p>
-          </div>
+      <main style={S.main}>
+        <div style={S.card}>
+          {/* Icon */}
+          <div style={S.iconWrap}>{icon}</div>
 
+          {/* Heading */}
+          <h2 style={S.heading}>{heading}</h2>
+          <p style={S.sub}>{subtext}</p>
+
+          {/* Phone phase */}
           {phase === 'phone' && (
             <div>
-              <div className="field">
-                <label className="field-label" htmlFor="signin-phone">Mobile number</label>
-                <div className="phone-row">
-                  <div className="phone-cc">🌐</div>
+              <div style={S.fieldWrap}>
+                <label style={S.label} htmlFor="signin-phone">Mobile number</label>
+                <div style={S.phoneRow}>
+                  <div style={S.phoneCC}>🌐</div>
                   <input
                     id="signin-phone"
-                    className="phone-input"
+                    style={S.phoneInput}
                     type="tel"
                     inputMode="tel"
                     placeholder="+91 98765 43210"
@@ -165,22 +250,23 @@ export default function SignInPage() {
                     autoFocus
                   />
                 </div>
-                {error && <div className="field-error">{error}</div>}
+                {error && <div style={S.error}>{error}</div>}
               </div>
-              <button className="btn-primary" style={{ width: '100%', padding: '14px' }} onClick={sendOtp} disabled={loading || !phoneIsValid(phone)}>
+              <button style={S.btn(loading || !phoneIsValid(phone))} onClick={sendOtp} disabled={loading || !phoneIsValid(phone)}>
                 {loading ? 'Sending…' : 'Send OTP →'}
               </button>
             </div>
           )}
 
+          {/* OTP phase */}
           {phase === 'otp' && (
             <div>
-              <div className="otp-box-row" onPaste={handlePaste} style={{ marginBottom: 16 }}>
+              <div style={S.otpRow} onPaste={handlePaste}>
                 {otp.map((d, i) => (
                   <input
                     key={i}
                     ref={el => boxRefs.current[i] = el}
-                    className={`otp-box${d ? ' filled' : ''}`}
+                    style={S.otpBox(!!d)}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
@@ -190,37 +276,38 @@ export default function SignInPage() {
                   />
                 ))}
               </div>
-              {error && <div className="field-error" style={{ textAlign: 'center', marginBottom: 12 }}>{error}</div>}
-              <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 14, color: 'var(--text-3)' }}>
+              {error && <div style={{ ...S.error, textAlign: 'center', marginBottom: 12 }}>{error}</div>}
+              <div style={S.resendRow}>
                 {timer > 0
                   ? <>Resend in <strong>{timer}s</strong></>
-                  : <button style={{ color: 'var(--primary)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }} onClick={() => { setPhase('phone'); setOtp(['','','','','','']); setError(''); }}>Change number or resend</button>
+                  : <button style={S.resendBtn} onClick={() => { setPhase('phone'); setOtp(['','','','','','']); setError(''); }}>Change number or resend</button>
                 }
               </div>
-              <button className="btn-primary" style={{ width: '100%', padding: '14px' }} onClick={verifyOtp} disabled={loading || !otpFull}>
+              <button style={S.btn(loading || !otpFull)} onClick={verifyOtp} disabled={loading || !otpFull}>
                 {loading ? 'Verifying…' : 'Verify →'}
               </button>
             </div>
           )}
 
+          {/* Profile phase */}
           {phase === 'profile' && (
             <div>
-              <div className="field">
-                <label className="field-label" htmlFor="signin-name">Your name <span style={{ color: 'var(--primary)' }}>*</span></label>
-                <input id="signin-name" className="field-input" type="text" placeholder="e.g. Aarav Sharma" value={name} onChange={e => { setName(e.target.value); setError(''); }} onKeyDown={e => e.key === 'Enter' && saveProfile()} autoFocus />
-                {error && <div className="field-error">{error}</div>}
+              <div style={S.fieldWrap}>
+                <label style={S.label} htmlFor="signin-name">Your name <span style={{ color: 'var(--accent)' }}>*</span></label>
+                <input id="signin-name" style={S.input} type="text" placeholder="e.g. Aarav Sharma" value={name} onChange={e => { setName(e.target.value); setError(''); }} onKeyDown={e => e.key === 'Enter' && saveProfile()} autoFocus />
+                {error && <div style={S.error}>{error}</div>}
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor="signin-gotra">Gotra <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
-                <input id="signin-gotra" className="field-input" type="text" placeholder="e.g. Kashyap" value={gotra} onChange={e => setGotra(e.target.value)} />
-                <div className="field-hint">The pandit will mention your gotra in the sankalp.</div>
+              <div style={S.fieldWrap}>
+                <label style={S.label} htmlFor="signin-gotra">Gotra <span style={{ fontWeight: 400, color: 'var(--ink-3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+                <input id="signin-gotra" style={S.input} type="text" placeholder="e.g. Kashyap" value={gotra} onChange={e => setGotra(e.target.value)} />
+                <div style={S.hint}>The pandit will mention your gotra in the sankalp.</div>
               </div>
-              <div className="field">
-                <label className="field-label" htmlFor="signin-location">Current city / location <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(recommended)</span></label>
-                <input id="signin-location" className="field-input" type="text" autoComplete="address-level2" placeholder="e.g. Gurugram, Delhi" value={place} onChange={e => setPlace(e.target.value)} />
-                <div className="field-hint">This is used only for the ritual sankalp.</div>
+              <div style={S.fieldWrap}>
+                <label style={S.label} htmlFor="signin-location">City / location <span style={{ fontWeight: 400, color: 'var(--ink-3)', textTransform: 'none', letterSpacing: 0 }}>(recommended)</span></label>
+                <input id="signin-location" style={S.input} type="text" autoComplete="address-level2" placeholder="e.g. Gurugram, Delhi" value={place} onChange={e => setPlace(e.target.value)} />
+                <div style={S.hint}>Used only for the ritual sankalp.</div>
               </div>
-              <button className="btn-primary" style={{ width: '100%', padding: '14px' }} onClick={saveProfile} disabled={loading || name.trim().length < 2}>
+              <button style={S.btn(loading || name.trim().length < 2)} onClick={saveProfile} disabled={loading || name.trim().length < 2}>
                 {loading ? 'Saving…' : 'Continue →'}
               </button>
             </div>
