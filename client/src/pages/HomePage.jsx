@@ -162,6 +162,7 @@ function ShieldCheckIcon() {
 }
 
 function HomeNav({ user, onSignIn, onBookings, onSignOut }) {
+  const navigate = useNavigate();
   const initial = user?.name?.[0]?.toUpperCase() || (user ? 'U' : null);
   const [open, setOpen] = useState(false);
   const dropRef = useRef(null);
