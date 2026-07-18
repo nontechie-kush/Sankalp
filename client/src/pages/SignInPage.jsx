@@ -219,7 +219,7 @@ export default function SignInPage() {
       {/* Minimal nav */}
       <div style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
         <div style={S.nav}>
-          <Logo noLink />
+          <Logo />
         </div>
       </div>
 
