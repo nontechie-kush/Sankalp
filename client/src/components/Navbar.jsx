@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tokenPayload, clearToken } from '../lib/auth';
+import Logo from './Logo';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -26,17 +27,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <button className="navbar-logo" onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-        <div className="navbar-logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M12 2 4 5v6c0 5 3.5 8 8 11 4.5-3 8-6 8-11V5l-8-3Z"/>
-          </svg>
-        </div>
-        <div className="navbar-logo-text">
-          <strong>Sankalp</strong>
-          <span>by Tathastu</span>
-        </div>
-      </button>
+      <Logo />
 
       <div className="navbar-actions">
         {!user ? (

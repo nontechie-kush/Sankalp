@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Logo from '../components/Logo';
 import { api } from '../lib/api';
 import { setStoredUser, setToken, tokenPayload } from '../lib/auth';
 import { trackEvent } from '../lib/analytics';
@@ -218,7 +219,7 @@ export default function SignInPage() {
       {/* Minimal nav */}
       <div style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
         <div style={S.nav}>
-          <span style={S.wordmark}>Sankkalp</span>
+          <Logo noLink />
         </div>
       </div>
 

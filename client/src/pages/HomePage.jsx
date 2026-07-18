@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Logo from '../components/Logo';
 import { RITUALS, getDeliveryDate } from '../data/rituals';
 import { useBooking } from '../context/BookingContext';
 import { trackEvent } from '../lib/analytics';
@@ -165,7 +166,7 @@ function HomeNav({ user, onSignIn, onBookings }) {
 
   return (
     <nav style={styles.nav}>
-      <strong style={styles.wordmark}>Sankkalp</strong>
+      <Logo />
       {!user ? (
         <button type="button" style={styles.signInButton} onClick={onSignIn}>Sign in</button>
       ) : (

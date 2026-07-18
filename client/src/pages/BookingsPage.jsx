@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import Logo from '../components/Logo';
 import { tokenPayload } from '../lib/auth';
 
 const S = {
@@ -241,7 +242,7 @@ export default function BookingsPage() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" width="15" height="15"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
           Home
         </button>
-        <strong style={S.wordmark}>Sankkalp</strong>
+        <Logo noLink />
         <div style={{ width: 52 }} />
       </div>
 
