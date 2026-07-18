@@ -144,12 +144,20 @@ async function resolveSelection(booking) {
 function transformBooking(row) {
   const date = row.preferred_date || row.promised_service_date || null;
   const active = ['pending_payment', 'pending_assignment', 'pandit_assigned', 'ritual_scheduled'].includes(row.status);
+  const bookingFor = row.booking_for || 'self';
+  const beneficiaryName = row.beneficiary_name || row.customer_name || '';
   return {
     id: row.booking_id,
     booking_ref: row.booking_number,
     ritual_name: row.ritual_title || 'Ritual',
     ritual_key: '',
     moment: row.use_case_title || row.ritual_title || 'Ritual',
+    booking_for: bookingFor,
+    beneficiary_name: beneficiaryName,
+    beneficiary_relation: row.beneficiary_relation || '',
+    beneficiary_gotra: row.beneficiary_gotra || '',
+    beneficiary_location: row.beneficiary_location || '',
+    for_label: bookingFor === 'other' && beneficiaryName ? `For ${beneficiaryName}` : 'For myself',
     booking_date: date,
     slot: row.preferred_time || '',
     price_display: rupees(row.amount_minor),
@@ -240,14 +248,41 @@ export const api = {
     try {
       const selection = await resolveSelection(booking);
       const storedUser = getStoredUser();
-      const { data, error } = await supabase.rpc('create_my_mweb_booking', {
+      const bookingFor = booking.bookingFor === 'other' ? 'other' : 'self';
+      const beneficiaryName = booking.beneficiaryName || booking.userName || booking.customerName || storedUser?.name || 'Sankalp customer';
+      const beneficiaryGotra = booking.beneficiaryGotra || booking.gotra || null;
+      const beneficiaryLocation = booking.beneficiaryLocation || booking.place || null;
+
+      const createBookingParams = {
         p_ritual_id: selection.ritual.id,
         p_use_case_id: selection.useCase.id,
         p_slot_id: selection.slot?.id || null,
-        p_customer_name: booking.userName || booking.customerName || storedUser?.name || 'Sankalp customer',
+        p_booking_for: bookingFor,
+        p_beneficiary_name: beneficiaryName,
+        p_beneficiary_relation: bookingFor === 'other' ? booking.beneficiaryRelation || null : null,
+        p_beneficiary_gotra: beneficiaryGotra,
+        p_beneficiary_location: beneficiaryLocation,
         p_intent_note: booking.intentNote || null,
         p_client_request_id: booking.clientRequestId || uuid(),
-      });
+      };
+
+      let result = await supabase.rpc('create_my_mweb_booking_v2', createBookingParams);
+
+      if (result.error && /function .* does not exist/i.test(result.error.message || '')) {
+        if (bookingFor === 'other') {
+          throw new Error('Book for someone else needs the latest database migration.');
+        }
+        result = await supabase.rpc('create_my_mweb_booking', {
+          p_ritual_id: selection.ritual.id,
+          p_use_case_id: selection.useCase.id,
+          p_slot_id: selection.slot?.id || null,
+          p_customer_name: beneficiaryName,
+          p_intent_note: booking.intentNote || null,
+          p_client_request_id: booking.clientRequestId || uuid(),
+        });
+      }
+
+      const { data, error } = result;
       if (error) throw error;
       const created = data?.[0];
       if (!created?.booking_id) throw new Error('Booking could not be created.');

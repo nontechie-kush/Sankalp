@@ -8,6 +8,8 @@ export default function ConfirmationPage() {
   const { ref } = useParams();
   const navigate = useNavigate();
   const { booking, reset } = useBooking();
+  const beneficiaryName = booking.beneficiaryName || booking.userName || '';
+  const isOther = booking.bookingFor === 'other';
 
   useEffect(() => {
     trackEvent('booking_confirmed_viewed', {
@@ -27,9 +29,11 @@ export default function ConfirmationPage() {
             </svg>
           </div>
 
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 32, fontWeight: 600, marginBottom: 10, color: 'var(--text)' }}>Booking confirmed</h1>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 32, fontWeight: 600, marginBottom: 10, color: 'var(--text)' }}>
+            {beneficiaryName ? `Sankalp for ${beneficiaryName} confirmed` : 'Booking confirmed'}
+          </h1>
           <p style={{ fontSize: 15, color: 'var(--text-3)', marginBottom: 32, lineHeight: 1.6 }}>
-            Your ritual has been scheduled. We'll update you once a pandit is assigned and again when it's complete.
+            We'll update you once a pandit is assigned and again when the ritual is complete.
           </p>
 
           {ref && (
@@ -39,8 +43,11 @@ export default function ConfirmationPage() {
                 <tbody>
                   {[
                     { label: 'Reference', value: ref },
+                    beneficiaryName && { label: 'Sankalp for', value: isOther && booking.beneficiaryRelation ? `${beneficiaryName} (${booking.beneficiaryRelation})` : beneficiaryName },
                     booking.ritualName && { label: 'Ritual', value: booking.ritualName },
                     booking.momentName && { label: 'Intent', value: booking.momentName },
+                    booking.beneficiaryGotra && { label: 'Gotra', value: booking.beneficiaryGotra },
+                    booking.beneficiaryLocation && { label: 'Location', value: booking.beneficiaryLocation },
                     booking.deliveryDate && { label: 'Expected by', value: booking.deliveryDate },
                     booking.price && { label: 'Paid', value: `Rs ${booking.price}` },
                   ].filter(Boolean).map(r => (

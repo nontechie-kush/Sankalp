@@ -47,7 +47,7 @@ const HOW_IT_WORKS_STEPS = [
   {
     label: 'Pick Moment',
     start: 0,
-    desc: 'Choose the ritual and the moment that matters — exam, interview, wedding, travel or anything else.',
+    desc: 'Choose the ritual, the moment that matters, and who the sankalp is for — yourself or someone you care about.',
   },
   {
     label: 'Book & Pay',
@@ -84,15 +84,31 @@ const TESTIMONIALS = [
   {
     type: 'video',
     src: '/testimonials/testimonial_sukh.mp4',
-    poster: '/testimonials/testimonial_sukh_poster.svg',
+    poster: '/testimonials/testimonial_sukh_poster.png',
     bg: 'linear-gradient(180deg,#D4A882 0%,#6e3c20 100%)',
     name: 'Sukhmani Kaur',
     after: 'Raksha Kavach · Gurgaon',
+    cardLabel: 'Raksha Kavach',
     quote: 'Booked before sharing her dream job offer letter.',
     dur: '0:33',
   },
-  { bg: 'linear-gradient(180deg,#C4B890 0%,#6a5a30 100%)', name: 'Rohan, 29', after: 'after Dhan Aagman', dur: '0:28' },
-  { bg: 'linear-gradient(180deg,#C8A09A 0%,#6a3030 100%)', name: 'Priya, 26', after: 'after Prem Setu', dur: '0:31' },
+  { bg: 'linear-gradient(180deg,#C4B890 0%,#6a5a30 100%)', name: 'Rohan, 29', after: 'after Dhan Aagman', cardLabel: 'Dhan Aagman', dur: '0:28' },
+  { bg: 'linear-gradient(180deg,#C8A09A 0%,#6a3030 100%)', name: 'Priya, 26', after: 'after Prem Setu', cardLabel: 'Prem Setu', dur: '0:31' },
+];
+
+const SANKALP_CONTEXT_POINTS = [
+  {
+    title: 'Mandir visits stay sacred',
+    copy: 'Go in person whenever you can. That experience has its own place.',
+  },
+  {
+    title: 'Use Sankkalp when life gets in the way',
+    copy: 'Time, travel, health, work, or distance should not leave the moment unsupported.',
+  },
+  {
+    title: 'A proper sankalp, not just touchwood',
+    copy: 'A pandit takes your name, intention, and prayer into the ritual.',
+  },
 ];
 
 const FILTERS = ['All', 'Career', 'Exams', 'Travel', 'Money', 'Love', 'Protection'];
@@ -238,6 +254,14 @@ function Hero({ onBookNow }) {
       <p style={styles.eyebrow}>SANKKALP BY TATHASTU</p>
       <h1 style={styles.h1}>Because some moments deserve more than luck.</h1>
       <p style={styles.heroCopy}>Verified pandits perform ritual on your behalf. Get ritual video delivered online with prasad delivered on doorstep.</p>
+      <div style={styles.heroSupportRow}>
+        <span style={styles.heroSupportIcon} aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+            <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z" />
+          </svg>
+        </span>
+        <span>Book for yourself, parents, partner, child, or friend.</span>
+      </div>
       <button type="button" style={styles.heroCta} onClick={onBookNow}>Book Now →</button>
     </section>
   );
@@ -334,7 +358,7 @@ function HowItWorks() {
         <video
           ref={videoRef}
           src={shouldLoadVideo ? '/how-it-works.mp4' : undefined}
-          poster="/how-it-works-poster.svg"
+          poster="/how-it-works-poster.png"
           muted
           loop
           autoPlay
@@ -423,6 +447,35 @@ function SocialProof() {
   );
 }
 
+function LovedOnesSection({ onBookNow }) {
+  const people = ['Parents', 'Partner', 'Child', 'Friend'];
+
+  return (
+    <section style={styles.lovedOnesBand}>
+      <div style={styles.lovedOnesIcon} aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+          <path d="M20 12v8H4v-8" />
+          <path d="M2 7h20v5H2z" />
+          <path d="M12 22V7" />
+          <path d="M12 7H8.5A2.5 2.5 0 1 1 12 3.5V7Z" />
+          <path d="M12 7h3.5A2.5 2.5 0 1 0 12 3.5V7Z" />
+        </svg>
+      </div>
+      <div style={styles.lovedOnesBody}>
+        <p style={styles.eyebrow}>Book for someone else</p>
+        <h2 style={styles.lovedOnesTitle}>Send a sankalp into their important moment.</h2>
+        <p style={styles.lovedOnesCopy}>
+          Enter their name, add gotra or city if you know it, and receive every update on your phone.
+        </p>
+        <div style={styles.lovedOnesChips}>
+          {people.map((person) => <span key={person} style={styles.lovedOnesChip}>{person}</span>)}
+        </div>
+        <button type="button" style={styles.lovedOnesButton} onClick={onBookNow}>Choose a moment</button>
+      </div>
+    </section>
+  );
+}
+
 function Testimonials() {
   const [modalItem, setModalItem] = useState(null);
 
@@ -459,10 +512,8 @@ function Testimonials() {
               <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
             </span>
             <span style={styles.testimonialOverlay}>
-              <span style={styles.testimonialDuration}>{item.dur}</span>
               <span style={styles.testimonialName}>{item.name}</span>
-              <span style={styles.testimonialAfter}>{item.after}</span>
-              {item.quote ? <span style={styles.testimonialQuote}>{item.quote}</span> : null}
+              <span style={styles.testimonialAfter}>{item.cardLabel || item.after}</span>
             </span>
           </div>
         ))}
@@ -516,6 +567,59 @@ function Testimonials() {
           </div>
         </div>
       )}
+    </section>
+  );
+}
+
+function RitualContextSection() {
+  return (
+    <section style={styles.section}>
+      <div style={styles.contextPanel}>
+        <div style={styles.contextMedia}>
+          <img src="/how-it-works-poster.png" alt="" style={styles.contextImage} loading="lazy" />
+          <span style={styles.contextMediaPill}>For the moments you cannot be there</span>
+        </div>
+
+        <div style={styles.contextBody}>
+          <p style={styles.eyebrow}>Where Sankkalp fits</p>
+          <h2 style={styles.contextTitle}>Not a replacement for your temple visit.</h2>
+          <p style={styles.contextLead}>
+            Sankkalp is for the days when you want more than touchwood, but cannot arrange a temple visit or in-person pooja in time.
+          </p>
+        </div>
+
+        <div style={styles.contextPointList}>
+          {SANKALP_CONTEXT_POINTS.map((point) => (
+            <div key={point.title} style={styles.contextPoint}>
+              <span style={styles.contextIcon} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </span>
+              <span>
+                <span style={styles.contextPointTitle}>{point.title}</span>
+                <span style={styles.contextPointCopy}>{point.copy}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div style={styles.traditionBand}>
+          <span style={styles.traditionIcon} aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+              <path d="M4 19h16" />
+              <path d="M7 19V9l5-4 5 4v10" />
+              <path d="M9 19v-7h6v7" />
+            </svg>
+          </span>
+          <span>
+            <span style={styles.traditionTitle}>A familiar idea from older times</span>
+            <span style={styles.traditionCopy}>
+              Kings and queens would ask rishis, kul-gurus, and raj purohits to perform rituals for their family or kingdom when duty or distance kept them away. Sankkalp brings that same idea to urgent modern moments.
+            </span>
+          </span>
+        </div>
+      </div>
     </section>
   );
 }
@@ -723,8 +827,10 @@ export default function HomePage() {
         <Hero onBookNow={() => handleBookNow('hero_cta_clicked')} />
         <RitualGrid rituals={rituals} onRitualClick={handleRitualClick} />
         <HowItWorks />
+        <LovedOnesSection onBookNow={() => handleBookNow('book_for_someone_home_clicked')} />
         <SocialProof />
         <Testimonials />
+        <RitualContextSection />
         <BrowseByMoment rituals={rituals} onSelect={handleMomentSelect} />
         <FaqSection openFaq={openFaq} setOpenFaq={setOpenFaq} />
       </main>
@@ -762,6 +868,8 @@ const styles = {
     justifyContent: 'space-between',
     padding: '0 16px',
     maxWidth: 520,
+    width: '100%',
+    boxSizing: 'border-box',
     margin: '0 auto',
   },
   wordmark: {
@@ -807,6 +915,8 @@ const styles = {
   },
   main: {
     maxWidth: 520,
+    width: '100%',
+    boxSizing: 'border-box',
     margin: '0 auto',
     padding: '0 16px',
   },
@@ -828,12 +938,35 @@ const styles = {
     letterSpacing: '-.01em',
     margin: '0 0 10px',
     color: 'var(--ink)',
+    overflowWrap: 'break-word',
   },
   heroCopy: {
     fontSize: 13,
     color: 'var(--ink-2)',
     lineHeight: 1.55,
-    margin: '0 0 16px',
+    margin: '0 0 12px',
+  },
+  heroSupportRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+    width: 'fit-content',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    color: '#7D4A2F',
+    background: '#FFF8F4',
+    border: '1px solid #EADDC9',
+    borderRadius: 12,
+    padding: '7px 11px',
+    fontSize: 11.5,
+    fontWeight: 700,
+    lineHeight: 1.25,
+    marginBottom: 16,
+  },
+  heroSupportIcon: {
+    display: 'inline-flex',
+    flexShrink: 0,
+    color: 'var(--accent)',
   },
   heroCta: {
     display: 'inline-flex',
@@ -859,7 +992,7 @@ const styles = {
   },
   ritualGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     gap: 10,
   },
   ritualCard: {
@@ -870,6 +1003,7 @@ const styles = {
     textAlign: 'left',
     color: 'var(--ink)',
     padding: 0,
+    minWidth: 0,
   },
   ritualImage: {
     width: '100%',
@@ -959,6 +1093,68 @@ const styles = {
     color: 'var(--ink-2)',
     lineHeight: 1.5,
     margin: 0,
+  },
+  lovedOnesBand: {
+    display: 'grid',
+    gridTemplateColumns: '44px 1fr',
+    gap: 13,
+    background: '#FFF8F4',
+    borderTop: '1px solid #EADDC9',
+    borderBottom: '1px solid #EADDC9',
+    margin: '0 -16px 28px',
+    padding: '18px 16px',
+  },
+  lovedOnesIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    background: '#FFFFFF',
+    border: '1px solid #EADDC9',
+    color: 'var(--accent)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lovedOnesBody: {
+    minWidth: 0,
+  },
+  lovedOnesTitle: {
+    color: 'var(--ink)',
+    fontSize: 17,
+    lineHeight: 1.18,
+    fontWeight: 800,
+    margin: '0 0 7px',
+  },
+  lovedOnesCopy: {
+    color: 'var(--ink-2)',
+    fontSize: 12.5,
+    lineHeight: 1.5,
+    margin: '0 0 12px',
+  },
+  lovedOnesChips: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 13,
+  },
+  lovedOnesChip: {
+    borderRadius: 100,
+    border: '1px solid #EADDC9',
+    background: '#FFFFFF',
+    color: '#7D4A2F',
+    fontSize: 10.5,
+    fontWeight: 800,
+    padding: '5px 9px',
+  },
+  lovedOnesButton: {
+    border: 0,
+    borderRadius: 8,
+    background: 'var(--ink)',
+    color: '#fff',
+    fontSize: 12.5,
+    fontWeight: 700,
+    padding: '10px 14px',
+    cursor: 'pointer',
   },
   socialCard: {
     background: 'var(--card)',
@@ -1101,29 +1297,20 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    padding: '28px 10px 12px',
-    background: 'linear-gradient(to top, rgba(0,0,0,.62), transparent)',
-  },
-  testimonialDuration: {
-    display: 'block',
-    color: 'rgba(255,255,255,.72)',
-    fontSize: 10,
+    padding: '34px 10px 12px',
+    background: 'linear-gradient(to top, rgba(0,0,0,.56), rgba(0,0,0,0))',
   },
   testimonialName: {
     display: 'block',
     color: '#fff',
     fontSize: 12,
     fontWeight: 700,
+    lineHeight: 1.2,
   },
   testimonialAfter: {
     display: 'block',
     color: 'rgba(255,255,255,.82)',
     fontSize: 10,
-  },
-  testimonialQuote: {
-    display: 'block',
-    color: 'rgba(255,255,255,.9)',
-    fontSize: 9,
     lineHeight: 1.2,
     marginTop: 3,
   },
@@ -1133,6 +1320,124 @@ const styles = {
     objectFit: 'cover',
     display: 'block',
     background: '#1d120c',
+  },
+  contextPanel: {
+    background: '#FEFCF8',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    overflow: 'hidden',
+    boxShadow: '0 10px 28px rgba(45,31,20,.04)',
+  },
+  contextMedia: {
+    position: 'relative',
+    height: 210,
+    background: '#EADDC9',
+    overflow: 'hidden',
+  },
+  contextImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  contextMediaPill: {
+    position: 'absolute',
+    left: 12,
+    bottom: 12,
+    maxWidth: 'calc(100% - 24px)',
+    display: 'inline-flex',
+    background: 'rgba(25,25,25,.72)',
+    color: '#fff',
+    borderRadius: 100,
+    padding: '7px 11px',
+    fontSize: 11,
+    fontWeight: 800,
+    lineHeight: 1.2,
+    backdropFilter: 'blur(5px)',
+  },
+  contextBody: {
+    padding: '18px 16px 6px',
+  },
+  contextTitle: {
+    fontSize: 20,
+    fontWeight: 800,
+    lineHeight: 1.15,
+    margin: '0 0 10px',
+    color: 'var(--ink)',
+  },
+  contextLead: {
+    fontSize: 13.5,
+    color: 'var(--ink-2)',
+    lineHeight: 1.55,
+    margin: 0,
+  },
+  contextPointList: {
+    display: 'grid',
+    gap: 10,
+    padding: '10px 16px 16px',
+  },
+  contextPoint: {
+    display: 'grid',
+    gridTemplateColumns: '24px 1fr',
+    gap: 10,
+    alignItems: 'flex-start',
+  },
+  contextIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+    background: '#EAF2EA',
+    color: '#2D6B2D',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  contextPointTitle: {
+    display: 'block',
+    fontSize: 13,
+    fontWeight: 800,
+    color: 'var(--ink)',
+    lineHeight: 1.25,
+    marginBottom: 2,
+  },
+  contextPointCopy: {
+    display: 'block',
+    fontSize: 12.5,
+    color: 'var(--ink-2)',
+    lineHeight: 1.5,
+  },
+  traditionBand: {
+    display: 'grid',
+    gridTemplateColumns: '34px 1fr',
+    gap: 12,
+    background: '#F7F0E6',
+    borderTop: '1px solid #EADDC9',
+    padding: '14px 13px',
+  },
+  traditionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    background: '#FFFFFF',
+    color: 'var(--accent)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  traditionTitle: {
+    display: 'block',
+    fontSize: 13,
+    fontWeight: 800,
+    color: 'var(--ink)',
+    lineHeight: 1.25,
+    marginBottom: 4,
+  },
+  traditionCopy: {
+    display: 'block',
+    fontSize: 12.3,
+    color: 'var(--ink-2)',
+    lineHeight: 1.52,
   },
   searchBox: {
     display: 'flex',
@@ -1257,6 +1562,8 @@ const styles = {
   },
   footer: {
     maxWidth: 520,
+    width: '100%',
+    boxSizing: 'border-box',
     margin: '0 auto',
     padding: '18px 16px',
     textAlign: 'center',
@@ -1271,6 +1578,8 @@ const styles = {
     bottom: 0,
     zIndex: 120,
     maxWidth: 520,
+    width: '100%',
+    boxSizing: 'border-box',
     margin: '0 auto',
     background: '#fff',
     borderTop: '1px solid #E4E0D5',

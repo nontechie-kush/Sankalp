@@ -4,7 +4,8 @@ alter table public.mweb_leads
 
 alter table public.mweb_bookings
   add column if not exists customer_gotra text,
-  add column if not exists customer_location text;
+  add column if not exists customer_location text,
+  add column if not exists metadata jsonb not null default '{}'::jsonb;
 
 update public.mweb_bookings booking
 set customer_gotra = coalesce(booking.customer_gotra, nullif(trim(lead.gotra), '')),
