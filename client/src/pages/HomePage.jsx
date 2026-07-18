@@ -181,7 +181,6 @@ function HomeNav({ user, onSignIn, onBookings, onSignOut }) {
         <button type="button" style={styles.signInButton} onClick={onSignIn}>Sign in</button>
       ) : (
         <div style={styles.navUserActions}>
-          <button type="button" style={styles.bookingsButton} onClick={onBookings}>My bookings</button>
           <div style={{ position: 'relative' }} ref={dropRef}>
             <button
               type="button"
@@ -417,7 +416,14 @@ function SocialProof() {
 }
 
 function Testimonials() {
-  const [activeVideo, setActiveVideo] = useState(null);
+  const [modalItem, setModalItem] = useState(null);
+
+  useEffect(() => {
+    if (!modalItem) return;
+    function onKey(e) { if (e.key === 'Escape') setModalItem(null); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [modalItem]);
 
   return (
     <section style={styles.section}>
@@ -429,57 +435,68 @@ function Testimonials() {
             role={item.type === 'video' ? 'button' : 'img'}
             tabIndex={item.type === 'video' ? 0 : undefined}
             style={{ ...styles.testimonialCard, background: item.bg }}
-            onClick={() => item.type === 'video' && setActiveVideo(item.name)}
+            onClick={() => item.type === 'video' && setModalItem(item)}
             onKeyDown={(event) => {
               if (item.type === 'video' && (event.key === 'Enter' || event.key === ' ')) {
                 event.preventDefault();
-                setActiveVideo(item.name);
+                setModalItem(item);
               }
             }}
             aria-label={item.type === 'video' ? `Play testimonial from ${item.name}` : `${item.name} testimonial`}
           >
-            {item.type === 'video' && activeVideo === item.name ? (
-              <video
-                src={item.src}
-                poster={item.poster}
-                style={styles.testimonialVideo}
-                controlsList="nodownload noplaybackrate"
-                disablePictureInPicture
-                disableRemotePlayback
-                onContextMenu={(event) => event.preventDefault()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (event.currentTarget.paused) {
-                    event.currentTarget.play().catch(() => {});
-                  } else {
-                    event.currentTarget.pause();
-                  }
-                }}
-                autoPlay
-                playsInline
-                preload="metadata"
-              />
-            ) : (
-              <>
-                {item.poster ? (
-                  <img src={item.poster} alt="" style={styles.testimonialPoster} loading="lazy" />
-                ) : null}
-                <span style={styles.playButton}>
-                  <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-                </span>
-              </>
-            )}
-            {activeVideo !== item.name ? (
-              <span style={styles.testimonialOverlay}>
-                <span style={styles.testimonialDuration}>{item.dur}</span>
-                <span style={styles.testimonialName}>{item.name}</span>
-                <span style={styles.testimonialAfter}>{item.after}</span>
-                {item.quote ? <span style={styles.testimonialQuote}>{item.quote}</span> : null}
-              </span>
+            {item.poster ? (
+              <img src={item.poster} alt="" style={styles.testimonialPoster} loading="lazy" />
             ) : null}
+            <span style={styles.playButton}>
+              <svg viewBox="0 0 24 24" fill="white" width="18" height="18" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+            <span style={styles.testimonialOverlay}>
+              <span style={styles.testimonialDuration}>{item.dur}</span>
+              <span style={styles.testimonialName}>{item.name}</span>
+              <span style={styles.testimonialAfter}>{item.after}</span>
+              {item.quote ? <span style={styles.testimonialQuote}>{item.quote}</span> : null}
+            </span>
           </div>
         ))}
       </div>
+
+      {/* Floating video modal */}
+      {modalItem && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={() => setModalItem(null)}
+        >
+          <div
+            style={{ width: '100%', maxWidth: 360, borderRadius: 16, overflow: 'hidden', position: 'relative', background: '#1a0f07', boxShadow: '0 24px 60px rgba(0,0,0,.5)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setModalItem(null)}
+              style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,.5)', border: 0, color: '#fff', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <video
+              src={modalItem.src}
+              poster={modalItem.poster}
+              style={{ width: '100%', display: 'block', maxHeight: '70vh', objectFit: 'contain', background: '#1a0f07' }}
+              controls
+              controlsList="nodownload noplaybackrate"
+              disablePictureInPicture
+              disableRemotePlayback
+              autoPlay
+              playsInline
+              preload="metadata"
+            />
+            <div style={{ padding: '12px 16px 16px', background: 'linear-gradient(to bottom, #1a0f07, #2C1A0E)' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{modalItem.name}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginTop: 2 }}>{modalItem.after}</div>
+              {modalItem.quote && <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', marginTop: 6, fontStyle: 'italic' }}>"{modalItem.quote}"</div>}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
