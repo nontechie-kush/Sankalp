@@ -232,9 +232,8 @@ export default function RitualPage() {
   return (
     <div className="page-wrap">
       <Navbar />
-      <main style={{ flex: 1, paddingTop: 24, paddingBottom: 100 }}>
+      <main style={{ flex: 1, paddingTop: 20, paddingBottom: 100 }}>
         <div className="checkout-wrap">
-          <DetailBack onBack={() => navigate('/')} />
 
           {selectedMoment && (
             <>
@@ -246,10 +245,10 @@ export default function RitualPage() {
                     </svg>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--primary-light)', marginBottom: 8 }}>Selected Sankalp</div>
-                    <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 31, lineHeight: 1.08, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{selectedMoment.name}</h1>
-                    <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 8 }}>
-                      Part of {ritual.name}
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--primary-light)', marginBottom: 6 }}>Selected Sankalp</div>
+                    <h1 style={{ fontSize: 20, lineHeight: 1.2, fontWeight: 700, margin: 0, color: 'var(--text)' }}>{selectedMoment.name}</h1>
+                    <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 5 }}>
+                      {ritual.name}
                     </p>
                   </div>
                 </div>
@@ -303,28 +302,22 @@ export default function RitualPage() {
           {/* Browse moments if none selected */}
           {!selectedMoment && (
             <div>
-              <h2 style={{ fontFamily: 'var(--font-sans)',fontSize: 22, fontWeight: 600, marginBottom: 16 }}>Choose your moment</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14 }}>Choose your moment</h2>
               {ritual.groups.map((g, gi) => (
-                <div key={gi} style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 10 }}>{g.name}</div>
+                <div key={gi} style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8 }}>{g.name}</div>
                   <div className="card" style={{ overflow: 'hidden' }}>
                     {g.moments.map(m => (
-                      <div key={m.id} className="moment-row" onClick={() => pickMoment(m)}>
-                        <div className="moment-icon" style={{ background: 'var(--bg)' }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" width="20" height="20" style={{ color: 'var(--primary-light)' }}>
-                            <path d="M5 12h14M13 6l6 6-6 6"/>
-                          </svg>
-                        </div>
+                      <button key={m.id} className="moment-row" onClick={() => pickMoment(m)}>
                         <div className="moment-info">
                           <div className="moment-name">
                             {m.name}
-                            {m.pop && <span style={{ marginLeft: 8, background: '#E8F0E8', color: '#2D6B2D', fontSize: 10, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 100 }}>Popular</span>}
+                            {m.pop && <span style={{ marginLeft: 8, background: '#E8F0E8', color: '#2D6B2D', fontSize: 10, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 100 }}>Popular</span>}
                           </div>
                           <div className="moment-why">{m.why}</div>
                         </div>
-                        <div className="moment-price">Rs {m.price}</div>
-                        <div className="moment-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" width="16" height="16"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-                      </div>
+                        <div className="moment-price">₹{m.price}</div>
+                      </button>
                     ))}
                   </div>
                 </div>
