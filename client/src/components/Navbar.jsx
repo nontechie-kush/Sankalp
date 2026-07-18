@@ -26,6 +26,7 @@ export default function Navbar() {
   }
 
   return (
+    <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
     <nav className="navbar">
       <Logo />
 
@@ -91,5 +92,6 @@ export default function Navbar() {
         )}
       </div>
     </nav>
+    </div>
   );
 }
