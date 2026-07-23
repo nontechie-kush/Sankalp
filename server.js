@@ -86,6 +86,7 @@ app.post('/api/payments/verify', (req, res) =>
   proxyPaymentFunction('razorpay-verify-payment', req, res)
 );
 
+app.use('/api', require('./api/videos'));
 app.use('/', require('./routes/index'));
 // API writes now go directly to Supabase Auth/RPC/Edge Functions from the client.
 // The older Express API routes are intentionally not mounted to avoid maintaining
