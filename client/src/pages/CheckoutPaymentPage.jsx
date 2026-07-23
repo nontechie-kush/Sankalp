@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { api } from '../lib/api';
+import { getStoredUser, tokenPayload } from '../lib/auth';
 import { useBooking } from '../context/BookingContext';
 import { bookingEventParams, trackEvent } from '../lib/analytics';
 
@@ -10,6 +11,12 @@ export default function CheckoutPaymentPage() {
   const { booking, update } = useBooking();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const payer = getStoredUser() || tokenPayload() || {};
+  const isOther = booking.bookingFor === 'other';
+  const beneficiaryName = booking.beneficiaryName || booking.userName || payer.name || booking.phone;
+  const beneficiaryGotra = booking.beneficiaryGotra || booking.gotra;
+  const beneficiaryLocation = booking.beneficiaryLocation || booking.place;
+  const payerLabel = payer.name ? `${payer.name}${booking.phone ? ` · ${booking.phone}` : ''}` : booking.phone;
 
   if (!booking.momentId || !booking.phone) { navigate('/'); return null; }
 
@@ -108,7 +115,7 @@ export default function CheckoutPaymentPage() {
           setLoading(false);
         }
       },
-      prefill: { name: booking.userName || undefined, contact: booking.phone },
+      prefill: { name: isOther ? payer.name || undefined : booking.userName || payer.name || undefined, contact: booking.phone },
       theme: { color: '#7D4A2F' },
       modal: { ondismiss: () => { trackEvent('payment_checkout_dismissed', bookingEventParams(booking)); setLoading(false); } },
     };
@@ -117,15 +124,15 @@ export default function CheckoutPaymentPage() {
     rzp.open();
   }
 
-  const forLabel = booking.bookingFor === 'other'
-    ? `${booking.userName}${booking.beneficiaryRelation ? ` (your ${booking.beneficiaryRelation.toLowerCase()})` : ''}`
-    : booking.userName || booking.phone;
+  const forLabel = isOther
+    ? `${beneficiaryName}${booking.beneficiaryRelation ? ` (${booking.beneficiaryRelation.toLowerCase()})` : ''}`
+    : beneficiaryName || booking.phone;
 
   const rows = [
-    { label: 'Account', value: booking.phone },
-    { label: booking.bookingFor === 'other' ? 'Booking for' : 'Sankalp for', value: forLabel },
-    booking.gotra && { label: 'Gotra', value: booking.gotra },
-    booking.place && { label: 'Location', value: booking.place },
+    { label: isOther ? 'Paid by' : 'Account', value: isOther ? payerLabel : booking.phone },
+    { label: 'Sankalp for', value: forLabel },
+    beneficiaryGotra && { label: 'Gotra', value: beneficiaryGotra },
+    beneficiaryLocation && { label: 'Location', value: beneficiaryLocation },
     { label: 'Ritual', value: booking.ritualName },
     { label: 'Intent', value: booking.momentName },
     booking.slotLabel && { label: 'Date', value: booking.slotLabel },

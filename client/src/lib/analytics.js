@@ -69,6 +69,7 @@ export function bookingEventParams(booking = {}) {
     ritual_name: booking.ritualName,
     moment_id: booking.momentId,
     moment_name: booking.momentName,
+    booking_for: booking.bookingFor,
     value: Number(booking.price) || undefined,
     currency: 'INR',
   });

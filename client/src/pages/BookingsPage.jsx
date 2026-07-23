@@ -145,6 +145,12 @@ function BookingCard({ booking }) {
 
       {/* Details */}
       <div style={S.details}>
+        {booking.for_label && (
+          <DetailRow
+            icon={<Icon d={['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M4 21c0-4 3.6-7 8-7s8 3 8 7']} />}
+            label="Sankalp for" value={booking.beneficiary_relation ? `${booking.for_label} · ${booking.beneficiary_relation}` : booking.for_label}
+          />
+        )}
         <DetailRow
           icon={<Icon d="M3 4h18v2H3zM16 2v4M8 2v4M3 10h18M5 14h.01M9 14h.01M13 14h.01M17 14h.01M5 18h.01M9 18h.01M13 18h.01" />}
           label="Date" value={date}

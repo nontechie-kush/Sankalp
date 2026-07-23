@@ -35,7 +35,7 @@ export async function loadBackendPriceMap() {
 }
 
 export function applyBackendPrices(rituals, priceMap) {
-  return rituals.map((ritual) => {
+  const pricedRituals = rituals.map((ritual) => {
     const groups = ritual.groups.map((group) => {
       const moments = group.moments.map((moment) => {
         const backendPrice = priceMap.get(`${normalize(ritual.name)}::${normalize(moment.name)}`);
@@ -51,4 +51,6 @@ export function applyBackendPrices(rituals, priceMap) {
       from: visiblePrices.length ? Math.min(...visiblePrices) : ritual.from,
     };
   });
+
+  return pricedRituals;
 }

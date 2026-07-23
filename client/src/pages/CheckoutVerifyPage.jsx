@@ -38,17 +38,23 @@ export default function CheckoutVerifyPage() {
   const timerRef = useRef(null);
   const boxRefs = useRef([]);
 
-  function needsRitualDetails(user) {
-    return !user?.name || !user?.gotra || !user?.sankalpLocation;
-  }
-
   function applyUserToBooking(user) {
-    update({
+    const userPatch = {
       phone: user?.phone || '',
-      userName: user?.name || '',
-      gotra: user?.gotra || '',
-      place: user?.sankalpLocation || '',
-    });
+    };
+
+    if (booking.bookingFor !== 'other') {
+      Object.assign(userPatch, {
+        userName: user?.name || '',
+        gotra: user?.gotra || '',
+        place: user?.sankalpLocation || '',
+        beneficiaryName: user?.name || '',
+        beneficiaryGotra: user?.gotra || '',
+        beneficiaryLocation: user?.sankalpLocation || '',
+      });
+    }
+
+    update(userPatch);
   }
 
   function phoneIsValid(value) {
@@ -70,7 +76,7 @@ export default function CheckoutVerifyPage() {
         if (cancelled) return;
         const user = d.success && d.user ? d.user : p;
         applyUserToBooking(user);
-        navigate(needsRitualDetails(user) ? '/checkout/signup' : '/checkout/payment');
+        navigate('/checkout/signup');
       })
       .catch(() => {
         if (cancelled) return;
@@ -134,8 +140,7 @@ export default function CheckoutVerifyPage() {
     setToken(d.token);
     setStoredUser(d.user);
     applyUserToBooking(d.user);
-    if (d.isNew || needsRitualDetails(d.user)) navigate('/checkout/signup');
-    else navigate('/checkout/payment');
+    navigate('/checkout/signup');
   }
 
   function handleOtpInput(val, idx) {

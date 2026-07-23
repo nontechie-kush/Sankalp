@@ -282,6 +282,23 @@ export default function RitualPage() {
                 </div>
                 <div className="timeline-date">By {fulfilment.dateLabel}</div>
               </div>
+
+              <div className="timeline-card" style={{ marginTop: 12 }}>
+                <div className="timeline-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+                    <path d="M20 12v8H4v-8" />
+                    <path d="M2 7h20v5H2z" />
+                    <path d="M12 22V7" />
+                    <path d="M12 7H8.5A2.5 2.5 0 1 1 12 3.5V7Z" />
+                    <path d="M12 7h3.5A2.5 2.5 0 1 0 12 3.5V7Z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="timeline-label">Who can this be for?</div>
+                  <div className="timeline-title">Yourself or someone you care about</div>
+                  <div className="timeline-sub">On the next step, choose who the pandit should take the sankalp for.</div>
+                </div>
+              </div>
             </>
           )}
 
