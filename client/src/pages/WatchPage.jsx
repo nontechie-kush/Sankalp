@@ -1,27 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Logo from '../components/Logo';
 
 export default function WatchPage() {
   const { ref } = useParams();
-  const [streamUrl, setStreamUrl] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
   const videoRef = useRef(null);
-
-  useEffect(() => {
-    fetch(`/api/video/${ref}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.streamUrl) {
-          setStreamUrl(data.streamUrl);
-        } else {
-          setError(data.error || 'Video not available');
-        }
-      })
-      .catch(() => setError('Could not load video'))
-      .finally(() => setLoading(false));
-  }, [ref]);
+  const streamUrl = `/api/video/${ref}`;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
@@ -40,12 +25,6 @@ export default function WatchPage() {
         <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 600, color: 'var(--ink)', marginBottom: 20 }}>
           Ritual Complete 🙏
         </h1>
-
-        {loading && (
-          <div style={{ background: '#000', borderRadius: 14, aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid rgba(255,255,255,.2)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
-          </div>
-        )}
 
         {error && (
           <div style={{ background: '#FDF3F3', border: '1px solid #F5C6C6', borderRadius: 14, padding: '20px 18px', textAlign: 'center' }}>

@@ -37,6 +37,7 @@ app.use(helmet({
         'https://analytics.google.com',
       ],
       frameSrc:   ['https://api.razorpay.com', 'https://checkout.razorpay.com'],
+      mediaSrc:   ["'self'", 'https://*.supabase.co'],
     },
   },
 }));

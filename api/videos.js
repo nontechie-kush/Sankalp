@@ -1,23 +1,16 @@
 const express = require('express');
-const { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { createClient } = require('@supabase/supabase-js');
 const twilio = require('twilio');
+const { Readable } = require('stream');
 
 const router = express.Router();
 
-const REGION = process.env.AWS_REGION || 'ap-south-1';
-const BUCKET = process.env.AWS_S3_BUCKET;
+const BUCKET = 'ritual-videos';
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 const APP_URL = process.env.APP_URL || 'https://sankkalp.com';
 
-function s3() {
-  return new S3Client({
-    region: REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-  });
+function supabase() {
+  return createClient(process.env.VIDEO_SUPABASE_URL, process.env.VIDEO_SUPABASE_SERVICE_KEY);
 }
 
 function twilioClient() {
@@ -32,57 +25,69 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-function videoKey(ref) {
+function videoPath(ref) {
   return `videos/${ref}.mp4`;
 }
 
-// Admin: get a presigned URL to upload a video for a booking ref
-// PUT the video file directly to the returned URL (Content-Type: video/mp4)
+async function ensureBucket(sb) {
+  const { error } = await sb.storage.createBucket(BUCKET, { public: false });
+  // ignore "already exists" error
+  if (error && !error.message?.includes('already exists')) throw error;
+}
+
+// Admin: get a presigned upload URL for a booking ref
+// PUT the video file directly to the returned uploadUrl (Content-Type: video/mp4)
 router.post('/admin/video/upload-url/:ref', requireAdmin, async (req, res) => {
   const { ref } = req.params;
-  if (!BUCKET) return res.status(500).json({ error: 'S3 bucket not configured' });
-
+  const sb = supabase();
   try {
-    const cmd = new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: videoKey(ref),
-      ContentType: 'video/mp4',
-    });
-    const url = await getSignedUrl(s3(), cmd, { expiresIn: 3600 }); // 1 hour to upload
-    res.json({ uploadUrl: url, key: videoKey(ref) });
+    await ensureBucket(sb);
+    const { data, error } = await sb.storage
+      .from(BUCKET)
+      .createSignedUploadUrl(videoPath(ref));
+    if (error) throw error;
+    res.json({ uploadUrl: data.signedUrl, path: data.path });
   } catch (err) {
     console.error('Upload URL error', err);
-    res.status(500).json({ error: 'Could not generate upload URL' });
+    res.status(500).json({ error: err.message || 'Could not generate upload URL' });
   }
 });
 
-// Public: get a short-lived presigned URL to stream the video
+// Public: stream the video proxied through the server (avoids CORS/CSP and slow cold starts)
 router.get('/video/:ref', async (req, res) => {
   const { ref } = req.params;
-  if (!BUCKET) return res.status(500).json({ error: 'S3 bucket not configured' });
-
+  const sb = supabase();
   try {
-    // Verify the video exists before issuing a URL
-    await s3().send(new HeadObjectCommand({ Bucket: BUCKET, Key: videoKey(ref) }));
+    const { data, error } = await sb.storage
+      .from(BUCKET)
+      .createSignedUrl(videoPath(ref), 3600);
+    if (error) return res.status(404).json({ error: 'Video not found' });
 
-    const cmd = new GetObjectCommand({
-      Bucket: BUCKET,
-      Key: videoKey(ref),
-      ResponseContentDisposition: 'inline',
-      ResponseContentType: 'video/mp4',
-    });
-    const url = await getSignedUrl(s3(), cmd, { expiresIn: 86400 }); // 24 hours
-    res.json({ streamUrl: url });
-  } catch (err) {
-    if (err.name === 'NotFound' || err.$metadata?.httpStatusCode === 404) {
-      return res.status(404).json({ error: 'Video not found' });
+    const range = req.headers.range;
+    const upstreamHeaders = { 'User-Agent': 'SankalpServer/1.0' };
+    if (range) upstreamHeaders['Range'] = range;
+
+    const upstream = await fetch(data.signedUrl, { headers: upstreamHeaders });
+    if (!upstream.ok && upstream.status !== 206) {
+      return res.status(upstream.status).json({ error: 'Video unavailable' });
     }
-    console.error('Stream URL error', err);
-    res.status(500).json({ error: 'Could not fetch video' });
+
+    res.status(range ? 206 : 200);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    ['Content-Length', 'Content-Range'].forEach(h => {
+      const v = upstream.headers.get(h);
+      if (v) res.setHeader(h, v);
+    });
+
+    Readable.fromWeb(upstream.body).pipe(res);
+  } catch (err) {
+    console.error('Stream error', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Could not stream video' });
   }
 });
 
-// Admin: send WhatsApp message with video watch link to a phone number
+// Admin: send WhatsApp with watch link via Twilio
 router.post('/admin/video/send/:ref', requireAdmin, async (req, res) => {
   const { ref } = req.params;
   const { phone, customerName } = req.body;
